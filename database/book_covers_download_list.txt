@@ -1,0 +1,113 @@
+# TaleTrail Book Covers Download List
+# Save images as JPG files with the exact filename shown
+# Location: C:\Users\chand\OneDrive\Desktop\PROJECT\taletrail\frontend\images\covers\
+
+## United Kingdom (7 books)
+1. Pride and Prejudice by Jane Austen → pride_prejudice.jpg
+2. Lord of the Rings by J.R.R. Tolkien → lord_rings.jpg
+3. Sherlock Holmes by Arthur Conan Doyle → sherlock_holmes.jpg
+4. Jane Eyre by Charlotte Brontë → jane_eyre.jpg
+5. Animal Farm by George Orwell → animal_farm.jpg
+6. Wuthering Heights by Emily Brontë → wuthering_heights.jpg
+7. The Chronicles of Narnia by C.S. Lewis → chronicles_narnia.jpg
+
+## United States (7 books)
+8. The Catcher in the Rye by J.D. Salinger → catcher_rye.jpg
+9. Gone with the Wind by Margaret Mitchell → gone_wind.jpg
+10. The Adventures of Huckleberry Finn by Mark Twain → huck_finn.jpg
+11. Of Mice and Men by John Steinbeck → mice_men.jpg
+12. The Grapes of Wrath by John Steinbeck → grapes_wrath.jpg
+13. Moby Dick by Herman Melville → moby_dick.jpg
+14. The Scarlet Letter by Nathaniel Hawthorne → scarlet_letter.jpg
+
+## France (8 books)
+15. Les Misérables by Victor Hugo → les_miserables.jpg
+16. The Count of Monte Cristo by Alexandre Dumas → monte_cristo.jpg
+17. Madame Bovary by Gustave Flaubert → madame_bovary.jpg
+18. The Stranger by Albert Camus → the_stranger.jpg
+19. In Search of Lost Time by Marcel Proust → lost_time.jpg
+20. Candide by Voltaire → candide.jpg
+21. The Three Musketeers by Alexandre Dumas → three_musketeers.jpg
+22. Nausea by Jean-Paul Sartre → nausea.jpg
+
+## Russia (8 books)
+23. Crime and Punishment by Fyodor Dostoevsky → crime_punishment.jpg
+24. Anna Karenina by Leo Tolstoy → anna_karenina.jpg
+25. The Brothers Karamazov by Fyodor Dostoevsky → brothers_karamazov.jpg
+26. Doctor Zhivago by Boris Pasternak → doctor_zhivago.jpg
+27. One Day in the Life of Ivan Denisovich by Aleksandr Solzhenitsyn → ivan_denisovich.jpg
+28. The Master and Margarita by Mikhail Bulgakov → master_margarita.jpg
+29. Eugene Onegin by Alexander Pushkin → eugene_onegin.jpg
+30. Dead Souls by Nikolai Gogol → dead_souls.jpg
+
+## India (8 books)
+31. The Mahabharata by Vyasa → mahabharata.jpg
+32. The God of Small Things by Arundhati Roy → god_small_things.jpg
+33. Midnight's Children by Salman Rushdie → midnights_children.jpg
+34. A Suitable Boy by Vikram Seth → suitable_boy.jpg
+35. The White Tiger by Aravind Adiga → white_tiger.jpg
+36. Shantaram by Gregory David Roberts → shantaram.jpg
+37. The Rozabal Line by Ashwin Sanghi → rozabal_line.jpg
+38. Sacred Games by Vikram Chandra → sacred_games.jpg
+
+## Japan (8 books)
+39. The Tale of Genji by Murasaki Shikibu → tale_genji.jpg
+40. Kafka on the Shore by Haruki Murakami → kafka_shore.jpg
+41. The Wind-Up Bird Chronicle by Haruki Murakami → windup_bird.jpg
+42. Snow Country by Yasunari Kawabata → snow_country.jpg
+43. The Book of Tea by Kakuzo Okakura → book_tea.jpg
+44. Battle Royale by Koushun Takami → battle_royale.jpg
+45. The Sailor Who Fell from Grace with the Sea by Yukio Mishima → sailor_grace.jpg
+46. Kitchen by Banana Yoshimoto → kitchen.jpg
+
+## China (8 books)
+47. Journey to the West by Wu Cheng'en → journey_west.jpg
+48. Dream of the Red Chamber by Cao Xueqin → red_chamber.jpg
+49. Wild Swans by Jung Chang → wild_swans.jpg
+50. The Good Earth by Pearl S. Buck → good_earth.jpg
+51. Red Sorghum by Mo Yan → red_sorghum.jpg
+52. Balzac and the Little Chinese Seamstress by Dai Sijie → balzac_seamstress.jpg
+53. Wolf Totem by Jiang Rong → wolf_totem.jpg
+54. The Three-Body Problem by Liu Cixin → three_body.jpg
+
+## Nigeria (8 books)
+55. Purple Hibiscus by Chimamanda Ngozi Adichie → purple_hibiscus.jpg
+56. Half of a Yellow Sun by Chimamanda Ngozi Adichie → yellow_sun.jpg
+57.      → joys_motherhood.jpg
+58. Americanah by Chimamanda Ngozi Adichie → americanah.jpg
+59. The Beautiful Ones Are Not Yet Born by Ayi Kwei Armah → beautiful_ones.jpg
+60. So Long a Letter by Mariama Bâ → long_letter.jpg
+61. The Palm-Wine Drinkard by Amos Tutuola → palm_wine.jpg
+62. Nervous Conditions by Tsitsi Dangarembga → nervous_conditions.jpg
+
+## Brazil (8 books)
+63. Dom Casmurro by Machado de Assis → dom_casmurro.jpg
+64. The Alchemist by Paulo Coelho → alchemist.jpg
+65. Gabriela, Clove and Cinnamon by Jorge Amado → gabriela.jpg
+66. The Hour of the Star by Clarice Lispector → hour_star.jpg
+67. Dona Flor and Her Two Husbands by Jorge Amado → dona_flor.jpg
+68. City of God by Paulo Lins → city_god.jpg
+69. The Passion According to G.H. by Clarice Lispector → passion_gh.jpg
+70. Captain of the Sands by Jorge Amado → captain_sands.jpg
+
+## Mexico (8 books)
+71. Like Water for Chocolate by Laura Esquivel → water_chocolate.jpg
+72. Pedro Páramo by Juan Rulfo → pedro_paramo.jpg
+73. The Labyrinth of Solitude by Octavio Paz → labyrinth_solitude.jpg
+74. Under the Volcano by Malcolm Lowry → under_volcano.jpg
+75. The Death of Artemio Cruz by Carlos Fuentes → artemio_cruz.jpg
+76. Where the Air Is Clear by Carlos Fuentes → air_clear.jpg
+77. The Underdogs by Mariano Azuela → underdogs.jpg
+78. Aura by Carlos Fuentes → aura.jpg
+
+---
+TOTAL: 78 book covers to download
+
+DOWNLOAD TIPS:
+- Search Google Images: "book title author cover"
+- Check Amazon book pages for high-quality covers
+- Visit Goodreads for book covers
+- Try publisher websites
+- Use Open Library (openlibrary.org)
+- Save as JPG format, 300x400 pixels if possible
+- Keep file sizes under 500KB each

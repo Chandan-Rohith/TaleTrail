@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaleTrail - Discover Books Around the World</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS for map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles/main.css">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-book-open"></i>
+                <span class="brand-text">TaleTrail</span>
+            </div>
+            
+            <div class="nav-menu">
+                <a href="#home" class="nav-link active">Home</a>
+                <a href="#explore" class="nav-link">Explore</a>
+                <a href="#trending" class="nav-link">Trending</a>
+                <a href="#recommendations" class="nav-link" id="rec-link" style="display: none;">For You</a>
+            </div>
+            
+            <div class="nav-auth">
+                <button class="btn-secondary" id="login-btn">Login</button>
+                <button class="btn-primary" id="signup-btn">Sign Up</button>
+                <div class="user-menu" id="user-menu" style="display: none;">
+                    <span class="user-name" id="user-name">User</span>
+                    <button class="btn-secondary" id="logout-btn">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                Discover Books<br>
+                <span class="text-gradient">Around the World</span>
+            </h1>
+            <p class="hero-subtitle">
+                Embark on a literary journey across continents. Click on any country to explore 
+                its top-rated books and discover your next favorite read.
+            </p>
+            <div class="hero-buttons">
+                <button class="btn-primary" onclick="scrollToSection('explore')">
+                    <i class="fas fa-globe-americas"></i>
+                    Start Exploring
+                </button>
+                <button class="btn-forest" onclick="scrollToSection('trending')">
+                    <i class="fas fa-fire"></i>
+                    See Trending
+                </button>
+            </div>
+        </div>
+        
+        <!-- Floating Book Icons -->
+        <div class="floating-icons">
+            <i class="fas fa-book floating-book" style="--delay: 0s; --x: 10%; --y: 20%;"></i>
+            <i class="fas fa-book-open floating-book" style="--delay: 1s; --x: 80%; --y: 30%;"></i>
+            <i class="fas fa-bookmark floating-book" style="--delay: 2s; --x: 20%; --y: 70%;"></i>
+            <i class="fas fa-feather-alt floating-book" style="--delay: 3s; --x: 70%; --y: 80%;"></i>
+        </div>
+    </section>
+
+    <!-- Interactive Map Section -->
+    <section id="explore" class="map-section">
+        <div class="container">
+            <h2 class="section-title">Explore Books by Country</h2>
+            <p class="section-subtitle">Click on any country to discover its literary treasures</p>
+            
+            <div class="map-container">
+                <div id="world-map" class="map"></div>
+            </div>
+            
+            <!-- Country Books Display -->
+            <div id="country-books" class="country-books" style="display: none;">
+                <h3 class="country-title" id="country-title">Books from Country</h3>
+                <div class="books-grid" id="books-grid">
+                    <!-- Books will be populated here -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trending Books Section -->
+    <section id="trending" class="trending-section">
+        <div class="container">
+            <h2 class="section-title">Recommended books</h2>
+            <p class="section-subtitle">Discover what readers around the world are loving right now</p>
+            
+            <div class="books-carousel" id="trending-books">
+                <div class="loading-spinner">
+                    <i class="fas fa-book-open spin"></i>
+                    <p>Loading trending books...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Recommendations Section (for logged-in users) -->
+    <section id="recommendations" class="recommendations-section" style="display: none;">
+        <div class="container">
+            <h2 class="section-title">Recommended for You</h2>
+            <p class="section-subtitle">Based on your reading preferences and activity</p>
+            
+            <div class="books-carousel" id="recommended-books">
+                <div class="loading-spinner">
+                    <i class="fas fa-magic spin"></i>
+                    <p>Generating personalized recommendations...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Book Detail Modal -->
+    <div id="book-modal" class="modal-backdrop" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-book-title">Book Title</h2>
+                <button class="modal-close" onclick="closeBookModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="book-detail-content">
+                    <div class="book-cover">
+                        <img id="modal-book-cover" src="" alt="Book Cover">
+                        <div class="book-rating">
+                            <div class="stars" id="modal-book-stars"></div>
+                            <span id="modal-book-rating">0.0</span>
+                        </div>
+                    </div>
+                    <div class="book-info">
+                        <p class="book-author">by <span id="modal-book-author">Author</span></p>
+                        <p class="book-country">
+                            <i class="fas fa-globe"></i>
+                            <span id="modal-book-country">Country</span>
+                        </p>
+                        <p class="book-year">
+                            <i class="fas fa-calendar"></i>
+                            <span id="modal-book-year">Year</span>
+                        </p>
+                        <div class="book-description">
+                            <p id="modal-book-description">Book description...</p>
+                        </div>
+                        
+                        <!-- User Rating Section -->
+                        <div class="user-rating-section" id="user-rating-section" style="display: none;">
+                            <h4>Rate this book:</h4>
+                            <div class="rating-input">
+                                <div class="stars-input" id="rating-stars">
+                                    <i class="fas fa-star" data-rating="1"></i>
+                                    <i class="fas fa-star" data-rating="2"></i>
+                                    <i class="fas fa-star" data-rating="3"></i>
+                                    <i class="fas fa-star" data-rating="4"></i>
+                                    <i class="fas fa-star" data-rating="5"></i>
+                                </div>
+                                <textarea id="review-text" placeholder="Write a review (optional)"></textarea>
+                                <button class="btn-primary" onclick="submitRating()">Submit Rating</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Reviews Section -->
+                        <div class="reviews-section">
+                            <h4>Reader Reviews</h4>
+                            <div id="book-reviews" class="reviews-list">
+                                <!-- Reviews will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal-backdrop" style="display: none;">
+        <div class="modal-content auth-modal">
+            <div class="modal-header">
+                <h2 id="auth-modal-title">Login</h2>
+                <button class="modal-close" onclick="closeAuthModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Login Form -->
+                <form id="login-form" class="auth-form">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="login-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn-primary full-width">Login</button>
+                    <p class="auth-switch">
+                        Don't have an account? 
+                        <a href="#" onclick="switchToSignup()">Sign up here</a>
+                    </p>
+                </form>
+                
+                <!-- Signup Form -->
+                <form id="signup-form" class="auth-form" style="display: none;">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="signup-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="signup-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="signup-password" required>
+                    </div>
+                    <button type="submit" class="btn-primary full-width">Sign Up</button>
+                    <p class="auth-switch">
+                        Already have an account? 
+                        <a href="#" onclick="switchToLogin()">Login here</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/books.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
