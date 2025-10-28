@@ -124,13 +124,15 @@ class AuthManager {
             // Show user menu, hide auth buttons
             if (loginBtn) loginBtn.style.display = 'none';
             if (signupBtn) signupBtn.style.display = 'none';
-            userMenu.style.display = 'flex';
-            userName.textContent = this.user.username;
-            recLink.style.display = 'block';
-            recSection.style.display = 'block';
+            if (userMenu) userMenu.style.display = 'flex';
+            if (userName) userName.textContent = this.user.username;
+            if (recLink) recLink.style.display = 'block';
+            if (recSection) recSection.style.display = 'block';
             
-            // Load recommendations
-            loadRecommendations();
+            // Load recommendations if function exists
+            if (typeof loadRecommendations === 'function') {
+                loadRecommendations();
+            }
         } else {
             // Show auth buttons, hide user menu
             // We don't display login/signup buttons on the main page per design.
@@ -138,8 +140,8 @@ class AuthManager {
             if (loginBtn) loginBtn.style.display = 'none';
             if (signupBtn) signupBtn.style.display = 'none';
             if (userMenu) userMenu.style.display = 'none';
-            recLink.style.display = 'none';
-            recSection.style.display = 'none';
+            if (recLink) recLink.style.display = 'none';
+            if (recSection) recSection.style.display = 'none';
         }
     }
 
