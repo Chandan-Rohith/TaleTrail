@@ -180,7 +180,11 @@ function closeBookModal() {
     // Reset rating input
     const ratingStars = document.querySelectorAll('#rating-stars i');
     ratingStars.forEach(star => star.classList.remove('active'));
-    document.getElementById('review-text').value = '';
+    
+    const reviewText = document.getElementById('review-text');
+    if (reviewText) {
+        reviewText.value = '';
+    }
 }
 
 // Setup Rating Input
