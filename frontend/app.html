@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaleTrail - Explore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Quick guard: if there's no stored token, redirect to landing/login
+        if (!localStorage.getItem('taletrail_token')) {
+            window.location.href = 'index.html';
+        }
+    </script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-book-open"></i>
+                <span class="brand-text">TaleTrail</span>
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="#explore" class="nav-link">Explore</a>
+                <a href="#trending" class="nav-link">Trending</a>
+                <a href="#recommendations" class="nav-link" id="rec-link" style="display: none;">For You</a>
+            </div>
+            <div class="nav-auth">
+                <div class="user-menu" id="user-menu" style="display: none;">
+                    <span class="user-name" id="user-name">User</span>
+                    <button class="btn-secondary" id="logout-btn">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Map and content (copied from previous main page) -->
+    <section id="explore" class="map-section">
+        <div class="container">
+            <h2 class="section-title">Explore Books by Country</h2>
+            <p class="section-subtitle">Click on any country to discover its literary treasures</p>
+            <div class="map-container">
+                <div id="world-map" class="map"></div>
+            </div>
+            <div id="country-books" class="country-books" style="display: none;">
+                <h3 class="country-title" id="country-title">Books from Country</h3>
+                <div class="books-grid" id="books-grid"></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="trending" class="trending-section">
+        <div class="container">
+            <h2 class="section-title">Recommended books</h2>
+            <p class="section-subtitle">Discover what readers around the world are loving right now</p>
+            <div class="books-carousel" id="trending-books">
+                <div class="loading-spinner"><i class="fas fa-book-open spin"></i><p>Loading trending books...</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="recommendations" class="recommendations-section" style="display: none;">
+        <div class="container">
+            <h2 class="section-title">Recommended for You</h2>
+            <p class="section-subtitle">Based on your reading preferences and activity</p>
+            <div class="books-carousel" id="recommended-books">
+                <div class="loading-spinner"><i class="fas fa-magic spin"></i><p>Generating personalized recommendations...</p></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Book Detail Modal (kept for app interactions) -->
+    <div id="book-modal" class="modal-backdrop" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-book-title">Book Title</h2>
+                <button class="modal-close" onclick="closeBookModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <!-- content copied as needed -->
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/books.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

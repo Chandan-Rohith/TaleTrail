@@ -206,39 +206,63 @@ function switchToLogin() {
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
-    // Auth button listeners
-    document.getElementById('login-btn').addEventListener('click', () => openAuthModal('login'));
-    document.getElementById('signup-btn').addEventListener('click', () => openAuthModal('signup'));
-    document.getElementById('logout-btn').addEventListener('click', () => authManager.logout());
+    // Safely attach auth-related listeners only if the elements exist on the page
+    const loginBtn = document.getElementById('login-btn');
+    const signupBtn = document.getElementById('signup-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const loginForm = document.getElementById('login-form');
+    const signupForm = document.getElementById('signup-form');
+    const authModal = document.getElementById('auth-modal');
 
-    // Form submissions
-    document.getElementById('login-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const email = document.getElementById('login-email').value;
-        const password = document.getElementById('login-password').value;
-        
-        const success = await authManager.login(email, password);
-        if (success) {
-            closeAuthModal();
-        }
+    if (loginBtn) loginBtn.addEventListener('click', () => openAuthModal('login'));
+    if (signupBtn) signupBtn.addEventListener('click', () => openAuthModal('signup'));
+    if (logoutBtn) logoutBtn.addEventListener('click', () => {
+        authManager.logout();
+        // After logout, redirect to landing
+        window.location.href = 'index.html';
     });
 
-    document.getElementById('signup-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const username = document.getElementById('signup-username').value;
-        const email = document.getElementById('signup-email').value;
-        const password = document.getElementById('signup-password').value;
-        
-        const success = await authManager.signup(username, email, password);
-        if (success) {
-            closeAuthModal();
-        }
-    });
+    if (loginForm) {
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
 
-    // Close modal when clicking backdrop
-    document.getElementById('auth-modal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeAuthModal();
-        }
-    });
+            const success = await authManager.login(email, password);
+            if (success) {
+                // If this form exists on a dedicated login page, redirect to the app
+                if (window.location.pathname.endsWith('login.html')) {
+                    window.location.href = 'app.html';
+                } else {
+                    closeAuthModal();
+                }
+            }
+        });
+    }
+
+    if (signupForm) {
+        signupForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const username = document.getElementById('signup-username').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+
+            const success = await authManager.signup(username, email, password);
+            if (success) {
+                if (window.location.pathname.endsWith('login.html')) {
+                    window.location.href = 'app.html';
+                } else {
+                    closeAuthModal();
+                }
+            }
+        });
+    }
+
+    if (authModal) {
+        authModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeAuthModal();
+            }
+        });
+    }
 });
