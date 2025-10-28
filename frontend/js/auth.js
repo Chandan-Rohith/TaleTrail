@@ -108,6 +108,10 @@ class AuthManager {
         showToast('Logged out successfully', 'success');
     }
 
+    getToken() {
+        return this.token;
+    }
+
     updateUI() {
         const loginBtn = document.getElementById('login-btn');
         const signupBtn = document.getElementById('signup-btn');

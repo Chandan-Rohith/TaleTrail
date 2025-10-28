@@ -10,43 +10,69 @@ const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5001';
 router.get('/user/:userId', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
-    const limit = req.query.limit || 10;
+    const limit = parseInt(req.query.limit) || 10;
 
-    // Call Python ML service
-    const response = await axios.get(`${ML_SERVICE_URL}/recommendations/user/${userId}`, {
-      params: { limit }
-    });
+    // Get user's favorite genres
+    const [favoriteGenres] = await db.execute(`
+      SELECT bg.genre_name, COUNT(*) as count
+      FROM user_favorites uf
+      JOIN book_genre_relations bgr ON uf.book_id = bgr.book_id
+      JOIN book_genres bg ON bgr.genre_id = bg.id
+      WHERE uf.user_id = ?
+      GROUP BY bg.genre_name
+      ORDER BY count DESC
+      LIMIT 3
+    `, [userId]);
 
-    res.json(response.data);
-  } catch (error) {
-    console.error('Error getting user recommendations:', error.message);
-    
-    // Fallback to simple recommendations if ML service fails
-    try {
-      const [books] = await db.execute(`
+    let books;
+    if (favoriteGenres.length > 0) {
+      // Get books from favorite genres that user hasn't favorited yet
+      const genreNames = favoriteGenres.map(g => g.genre_name);
+      const placeholders = genreNames.map(() => '?').join(',');
+      
+      const [genreBooks] = await db.execute(`
+        SELECT DISTINCT b.*, c.name as country_name
+        FROM books b
+        LEFT JOIN countries c ON b.country_id = c.id
+        JOIN book_genre_relations bgr ON b.id = bgr.book_id
+        JOIN book_genres bg ON bgr.genre_id = bg.id
+        WHERE bg.genre_name IN (${placeholders})
+        AND b.id NOT IN (
+          SELECT book_id FROM user_favorites WHERE user_id = ?
+        )
+        ORDER BY b.average_rating DESC, b.rating_count DESC
+        LIMIT ?
+      `, [...genreNames, userId, limit]);
+      
+      books = genreBooks;
+    } else {
+      // No favorites yet, show popular books
+      const [popularBooks] = await db.execute(`
         SELECT b.*, c.name as country_name 
         FROM books b
         LEFT JOIN countries c ON b.country_id = c.id
         ORDER BY b.average_rating DESC, b.rating_count DESC
         LIMIT ?
-      `, [parseInt(req.query.limit) || 10]);
-
-      res.json({
-        user_id: parseInt(userId),
-        recommendations: books.map(book => ({
-          book_id: book.id,
-          title: book.title,
-          author: book.author,
-          country: book.country_name,
-          rating: book.average_rating,
-          recommendation_type: 'fallback'
-        })),
-        total: books.length,
-        fallback: true
-      });
-    } catch (dbError) {
-      res.status(500).json({ error: 'Failed to get recommendations' });
+      `, [limit]);
+      
+      books = popularBooks;
     }
+
+    res.json({
+      user_id: parseInt(userId),
+      recommendations: books.map(book => ({
+        book_id: book.id,
+        title: book.title,
+        author: book.author,
+        country: book.country_name,
+        rating: book.average_rating,
+        recommendation_type: favoriteGenres.length > 0 ? 'personalized' : 'popular'
+      })),
+      total: books.length
+    });
+  } catch (error) {
+    console.error('Error getting user recommendations:', error.message);
+    res.status(500).json({ error: 'Failed to get recommendations', details: error.message });
   }
 });
 
