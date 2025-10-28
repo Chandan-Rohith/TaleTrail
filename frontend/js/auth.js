@@ -169,6 +169,48 @@ const authManager = new AuthManager();
 // Other parts of the app can await `window.authReady` to avoid UI flashes.
 window.authReady = authManager.ready;
 
+// Simple localStorage-based redirect to enforce landing/login/main flow quickly.
+// This checks the presence of a token in localStorage and redirects without
+// waiting for async verification so pages don't flash incorrect content.
+function checkLocalAuthRedirect() {
+    try {
+        const token = localStorage.getItem('taletrail_token');
+        const path = window.location.pathname;
+        let file = path.substring(path.lastIndexOf('/') + 1);
+        if (!file) file = 'index.html';
+
+        // If user is on landing and has token -> go to main
+        if (file === 'index.html' || file === '') {
+            if (token) {
+                window.location.href = 'main.html';
+                return;
+            }
+        }
+
+        // If user is on login page and already logged in -> go to main
+        if (file === 'login.html') {
+            if (token) {
+                window.location.href = 'main.html';
+                return;
+            }
+        }
+
+        // If user is on main page but not logged in -> go to landing
+        if (file === 'main.html' || file === 'app.html') {
+            if (!token) {
+                window.location.href = 'index.html';
+                return;
+            }
+        }
+    } catch (err) {
+        // ignore and allow normal flow
+        console.warn('Auth redirect check failed:', err);
+    }
+}
+
+// Run redirect check as early as possible
+checkLocalAuthRedirect();
+
 // Auth Modal Functions
 function openAuthModal(mode = 'login') {
     const modal = document.getElementById('auth-modal');
@@ -232,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (success) {
                 // If this form exists on a dedicated login page, redirect to the app
                 if (window.location.pathname.endsWith('login.html')) {
-                    window.location.href = 'app.html';
+                    window.location.href = 'main.html';
                 } else {
                     closeAuthModal();
                 }
@@ -250,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const success = await authManager.signup(username, email, password);
             if (success) {
                 if (window.location.pathname.endsWith('login.html')) {
-                    window.location.href = 'app.html';
+                    window.location.href = 'main.html';
                 } else {
                     closeAuthModal();
                 }
