@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - TaleTrail</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles/main.css">
+    <style>
+        .profile-container {
+            max-width: 1200px;
+            margin: 100px auto 50px;
+            padding: 20px;
+        }
+        
+        .profile-header {
+            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .profile-header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.5em;
+        }
+        
+        .profile-header p {
+            margin: 5px 0;
+            opacity: 0.9;
+        }
+        
+        .profile-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        .section-title {
+            font-size: 2em;
+            color: #8B4513;
+            margin: 40px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #D2691E;
+        }
+        
+        .liked-books-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        
+        .liked-book-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+        
+        .liked-book-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        
+        .liked-book-cover {
+            width: 100%;
+            height: 280px;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        
+        .liked-book-info {
+            padding: 15px;
+        }
+        
+        .liked-book-title {
+            font-weight: bold;
+            margin: 0 0 5px 0;
+            color: #8B4513;
+            font-size: 1em;
+            cursor: pointer;
+        }
+        
+        .liked-book-author {
+            color: #666;
+            font-size: 0.9em;
+            margin: 0 0 10px 0;
+        }
+        
+        .unlike-btn {
+            width: 100%;
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s;
+        }
+        
+        .unlike-btn:hover {
+            background: #c82333;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        
+        .empty-state i {
+            font-size: 4em;
+            color: #D2691E;
+            margin-bottom: 20px;
+        }
+        
+        .empty-state h3 {
+            font-size: 1.5em;
+            margin: 20px 0 10px 0;
+        }
+        
+        .empty-state p {
+            margin-bottom: 20px;
+        }
+        
+        .btn-explore {
+            display: inline-block;
+            background: #8B4513;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+        
+        .btn-explore:hover {
+            background: #A0522D;
+        }
+        
+        .loading-spinner {
+            text-align: center;
+            padding: 40px;
+            color: #8B4513;
+        }
+        
+        .loading-spinner i {
+            font-size: 3em;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-book"></i>
+                <span>TaleTrail</span>
+            </div>
+            <div class="nav-links">
+                <a href="main.html">Home</a>
+                <a href="main.html#explore">Explore</a>
+                <a href="main.html#trending">Trending</a>
+                <a href="main.html#recommendations">For You</a>
+            </div>
+            <div class="nav-actions">
+                <button class="search-btn"><i class="fas fa-search"></i></button>
+                <div class="user-menu" id="user-menu">
+                    <span id="user-name">User</span>
+                    <div class="user-dropdown">
+                        <a href="profile.html" class="active"><i class="fas fa-user"></i> Profile</a>
+                        <a href="#" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="profile-container">
+        <!-- Profile Header -->
+        <div class="profile-header">
+            <h1 id="profile-username">Loading...</h1>
+            <p id="profile-email"></p>
+            <div class="profile-stats">
+                <div class="stat-item">
+                    <span class="stat-number" id="books-liked-count">0</span>
+                    <span class="stat-label">Books Liked</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="books-rated-count">0</span>
+                    <span class="stat-label">Books Rated</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="countries-explored-count">0</span>
+                    <span class="stat-label">Countries Explored</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Liked Books Section -->
+        <h2 class="section-title">
+            <i class="fas fa-heart"></i> My Liked Books
+        </h2>
+        <div id="liked-books-container">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner"></i>
+                <p>Loading your favorite books...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    
+    <script>
+        let likedBooks = [];
+        
+        // Check authentication
+        if (!authManager.isAuthenticated()) {
+            window.location.href = 'login.html';
+        }
+        
+        // Load profile data
+        async function loadProfile() {
+            try {
+                const user = authManager.user;
+                document.getElementById('profile-username').textContent = user.username;
+                document.getElementById('profile-email').textContent = user.email;
+                
+                // Load liked books
+                await loadLikedBooks();
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                showToast('Failed to load profile', 'error');
+            }
+        }
+        
+        // Load liked books
+        async function loadLikedBooks() {
+            const container = document.getElementById('liked-books-container');
+            
+            try {
+                const response = await apiService.getUserFavorites();
+                likedBooks = response.favorites || [];
+                
+                // Update stats
+                document.getElementById('books-liked-count').textContent = likedBooks.length;
+                
+                // Calculate unique countries
+                const uniqueCountries = new Set(likedBooks.map(book => book.country_id).filter(Boolean));
+                document.getElementById('countries-explored-count').textContent = uniqueCountries.size;
+                
+                if (likedBooks.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-heart-broken"></i>
+                            <h3>No Liked Books Yet</h3>
+                            <p>Start exploring and save your favorite books!</p>
+                            <a href="main.html#explore" class="btn-explore">Explore Books</a>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="liked-books-grid">
+                            ${likedBooks.map(book => `
+                                <div class="liked-book-card" data-book-id="${book.id}">
+                                    <img src="${getBookCoverUrl(book)}" 
+                                         alt="${book.title}" 
+                                         class="liked-book-cover"
+                                         onclick="viewBookDetails(${book.id})">
+                                    <div class="liked-book-info">
+                                        <h3 class="liked-book-title" onclick="viewBookDetails(${book.id})">${book.title}</h3>
+                                        <p class="liked-book-author">by ${book.author}</p>
+                                        <button class="unlike-btn" onclick="unlikeBook(${book.id})">
+                                            <i class="fas fa-heart-broken"></i> Unlike
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading liked books:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Failed to Load Liked Books</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Get book cover URL
+        function getBookCoverUrl(book) {
+            const imageMapping = {
+                "To Kill a Mockingbird": "mockingbird.jpg",
+                "1984": "1984.jpg",
+                "Pride and Prejudice": "pride_prejudice.jpg",
+                "The Great Gatsby": "gatsby.jpg",
+                "Harry Potter and the Philosopher's Stone": "harry_potter.jpg",
+                "The Lord of the Rings": "lotr.jpg",
+                "The Catcher in the Rye": "catcher.jpg",
+                "Animal Farm": "animal_farm.jpg",
+                "The Hobbit": "hobbit.jpg",
+                "Fahrenheit 451": "fahrenheit.jpg",
+                "Jane Eyre": "jane_eyre.jpg",
+                "Wuthering Heights": "wuthering.jpg",
+                "The Chronicles of Narnia": "chronicles_narnia.jpg",
+                "Crime and Punishment": "crime_punishment.jpg",
+                "The Brothers Karamazov": "brothers_karamazov.jpg",
+                "War and Peace": "war_peace.jpg",
+                "Anna Karenina": "anna_karenina.jpg",
+                "Les Miserables": "les_miserables.jpg",
+                "The Count of Monte Cristo": "monte_cristo.jpg",
+                "Madame Bovary": "madame_bovary.jpg"
+            };
+            
+            const imageName = imageMapping[book.title];
+            if (imageName) {
+                return `images/covers/${imageName}`;
+            }
+            return book.cover_image || 'images/covers/default.jpg';
+        }
+        
+        // Unlike a book
+        async function unlikeBook(bookId) {
+            if (!confirm('Remove this book from your favorites?')) {
+                return;
+            }
+            
+            try {
+                await apiService.removeFavorite(bookId);
+                showToast('Book removed from favorites', 'success');
+                await loadLikedBooks();
+            } catch (error) {
+                console.error('Error unliking book:', error);
+                showToast('Failed to remove book', 'error');
+            }
+        }
+        
+        // View book details
+        function viewBookDetails(bookId) {
+            window.location.href = `main.html?book=${bookId}`;
+        }
+        
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            authManager.logout();
+            window.location.href = 'login.html';
+        });
+        
+        // Initialize
+        loadProfile();
+    </script>
+</body>
+</html>
