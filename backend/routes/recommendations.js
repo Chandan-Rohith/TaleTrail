@@ -60,19 +60,40 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
     // Fallback: Show popular books (excluding user's favorites)
     if (books.length === 0) {
       try {
-        const [popularBooks] = await db.execute(`
-          SELECT b.*, c.name as country_name 
-          FROM books b
-          LEFT JOIN countries c ON b.country_id = c.id
-          WHERE b.id NOT IN (
-            SELECT COALESCE(book_id, 0) FROM user_favorites WHERE user_id = ?
-          )
-          ORDER BY b.average_rating DESC, b.rating_count DESC
-          LIMIT ?
-        `, [userId, limit]);
+        // First, get user's favorites
+        const [userFavs] = await db.execute(`
+          SELECT book_id FROM user_favorites WHERE user_id = ?
+        `, [userId]);
         
-        books = popularBooks;
+        const favIds = userFavs.map(f => f.book_id);
+        
+        if (favIds.length > 0) {
+          // Exclude favorites
+          const placeholders = favIds.map(() => '?').join(',');
+          const [popularBooks] = await db.execute(`
+            SELECT b.*, c.name as country_name 
+            FROM books b
+            LEFT JOIN countries c ON b.country_id = c.id
+            WHERE b.id NOT IN (${placeholders})
+            ORDER BY b.average_rating DESC, b.rating_count DESC
+            LIMIT ?
+          `, [...favIds, limit]);
+          
+          books = popularBooks;
+        } else {
+          // No favorites, just get popular books
+          const [popularBooks] = await db.execute(`
+            SELECT b.*, c.name as country_name 
+            FROM books b
+            LEFT JOIN countries c ON b.country_id = c.id
+            ORDER BY b.average_rating DESC, b.rating_count DESC
+            LIMIT ?
+          `, [limit]);
+          
+          books = popularBooks;
+        }
       } catch (fallbackError) {
+        console.log('Fallback recommendations error:', fallbackError.message);
         // Last resort: just get any popular books
         const [allBooks] = await db.execute(`
           SELECT b.*, c.name as country_name 
