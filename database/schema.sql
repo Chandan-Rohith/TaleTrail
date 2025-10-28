@@ -1,6 +1,9 @@
 -- TaleTrail Database Schema
 -- Create database and tables for the book discovery platform
 
+SET FOREIGN_KEY_CHECKS = 0;
+SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
+
 CREATE DATABASE IF NOT EXISTS taletrail_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE taletrail_db;
 
@@ -13,6 +16,8 @@ DROP TABLE IF EXISTS book_genres;
 DROP TABLE IF EXISTS books;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS countries;
+
+SET FOREIGN_KEY_CHECKS = 1;
 
 -- Countries table
 CREATE TABLE countries (
