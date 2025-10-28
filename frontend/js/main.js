@@ -298,7 +298,19 @@ class TaleTrailApp {
 }
 
 // Initialize the application
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    // Wait for auth verification to finish before fully initializing the app.
+    // This prevents a brief flash of the auth modal when a stored token is being verified.
+    if (window.authReady) {
+        try {
+            await window.authReady;
+        } catch (e) {
+            // If auth verification failed, we've already logged out in authManager;
+            // proceed with app initialization anyway.
+            console.warn('auth verification failed or was rejected', e);
+        }
+    }
+
     window.taleTrailApp = new TaleTrailApp();
     
     // Add some interactive flourishes

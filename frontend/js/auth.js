@@ -3,19 +3,35 @@ class AuthManager {
     constructor() {
         this.token = localStorage.getItem('taletrail_token');
         this.user = null;
+        // Promise that resolves when initial auth verification completes.
+        this.ready = null;
         this.init();
     }
 
     async init() {
-        if (this.token) {
-            try {
-                await this.verifyToken();
-            } catch (error) {
-                console.error('Token verification failed:', error);
-                this.logout();
+        // Create a readiness promise so other modules (like main.js) can wait
+        // for auth verification to complete before rendering UI, preventing
+        // a brief flash of the auth modal when a valid token exists.
+        this.ready = (async () => {
+            if (this.token) {
+                try {
+                    await this.verifyToken();
+                } catch (error) {
+                    console.error('Token verification failed:', error);
+                    // If verification fails, ensure we clear stored credentials
+                    this.logout();
+                }
             }
-        }
-        this.updateUI();
+
+            // Update UI based on (possibly updated) auth state
+            this.updateUI();
+
+            // If still not authenticated, show auth modal (login) so the user
+            // must either login or sign up before interacting.
+            if (!this.isAuthenticated()) {
+                openAuthModal('login');
+            }
+        })();
     }
 
     async verifyToken() {
@@ -108,8 +124,8 @@ class AuthManager {
 
         if (this.isAuthenticated()) {
             // Show user menu, hide auth buttons
-            loginBtn.style.display = 'none';
-            signupBtn.style.display = 'none';
+            if (loginBtn) loginBtn.style.display = 'none';
+            if (signupBtn) signupBtn.style.display = 'none';
             userMenu.style.display = 'flex';
             userName.textContent = this.user.username;
             recLink.style.display = 'block';
@@ -119,9 +135,11 @@ class AuthManager {
             loadRecommendations();
         } else {
             // Show auth buttons, hide user menu
-            loginBtn.style.display = 'inline-flex';
-            signupBtn.style.display = 'inline-flex';
-            userMenu.style.display = 'none';
+            // We don't display login/signup buttons on the main page per design.
+            // The auth modal will be shown on initial load instead.
+            if (loginBtn) loginBtn.style.display = 'none';
+            if (signupBtn) signupBtn.style.display = 'none';
+            if (userMenu) userMenu.style.display = 'none';
             recLink.style.display = 'none';
             recSection.style.display = 'none';
         }
@@ -146,6 +164,10 @@ class AuthManager {
 
 // Initialize auth manager
 const authManager = new AuthManager();
+
+// Expose a global promise that indicates when initial auth verification has completed.
+// Other parts of the app can await `window.authReady` to avoid UI flashes.
+window.authReady = authManager.ready;
 
 // Auth Modal Functions
 function openAuthModal(mode = 'login') {

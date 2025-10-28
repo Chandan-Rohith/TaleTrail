@@ -47,6 +47,22 @@ app.use('/api/countries', countryRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/user', userRoutes);
 
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ 
+    message: '📚 Welcome to TaleTrail API!',
+    status: 'online',
+    version: '1.0.0',
+    endpoints: {
+      books: '/api/books',
+      countries: '/api/countries',
+      auth: '/api/auth',
+      recommendations: '/api/recommendations',
+      health: '/api/health'
+    }
+  });
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 
