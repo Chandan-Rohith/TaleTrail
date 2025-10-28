@@ -7,6 +7,68 @@ function canLoadBooks() {
     return window.authManager && authManager.isAuthenticated();
 }
 
+// User favorites cache
+let userFavorites = new Set();
+
+// Load user favorites
+async function loadUserFavorites() {
+    if (!authManager.isAuthenticated()) return;
+    
+    try {
+        const token = authManager.getToken();
+        const response = await fetch(`${CONFIG.API_BASE_URL}/favorites`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            userFavorites = new Set(data.favorites.map(f => f.book_id));
+        }
+    } catch (error) {
+        console.error('Error loading favorites:', error);
+    }
+}
+
+// Toggle favorite status
+async function toggleFavorite(bookId, button) {
+    if (!authManager.isAuthenticated()) {
+        showToast('Please login to save books', 'warning');
+        return;
+    }
+    
+    const token = authManager.getToken();
+    const isFavorited = userFavorites.has(bookId);
+    const method = isFavorited ? 'DELETE' : 'POST';
+    
+    try {
+        const response = await fetch(`${CONFIG.API_BASE_URL}/favorites/${bookId}`, {
+            method,
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            if (isFavorited) {
+                userFavorites.delete(bookId);
+                button.innerHTML = '<i class="far fa-heart"></i>';
+                button.classList.remove('favorited');
+                showToast('Removed from favorites', 'success');
+            } else {
+                userFavorites.add(bookId);
+                button.innerHTML = '<i class="fas fa-heart"></i>';
+                button.classList.add('favorited');
+                showToast('Added to favorites', 'success');
+            }
+        }
+    } catch (error) {
+        console.error('Error toggling favorite:', error);
+        showToast('Failed to update favorites', 'error');
+    }
+}
+
 // Create Book Card HTML
 function createBookCard(book) {
     // Ensure we have valid book data
@@ -18,9 +80,15 @@ function createBookCard(book) {
     const rating = formatRating(book.average_rating || book.rating || 0);
     const coverUrl = getBookCoverUrl(book);
     const bookId = book.book_id || book.id;
+    const isFavorited = userFavorites.has(bookId);
     
     return `
-        <div class="book-card" onclick="openBookModal(${bookId})">
+        <div class="book-card" onclick="openBookModal(${bookId})" style="position: relative;">
+            <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" 
+                    onclick="event.stopPropagation(); toggleFavorite(${bookId}, this)"
+                    title="${isFavorited ? 'Remove from favorites' : 'Add to favorites'}">
+                <i class="${isFavorited ? 'fas' : 'far'} fa-heart"></i>
+            </button>
             <div class="book-cover-container">
                 <img src="${coverUrl}" alt="${book.title}" class="book-cover" 
                      onerror="handleImageError(this, '${book.title.charAt(0).toUpperCase()}');"

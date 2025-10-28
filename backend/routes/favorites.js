@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const authMiddleware = require('../middleware/auth');
 const auth = require('../middleware/auth');
 
 // Get user's saved/favorite books
