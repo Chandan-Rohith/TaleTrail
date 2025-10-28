@@ -4,10 +4,13 @@
 
 1. Open MySQL Workbench
 2. Connect to your MySQL server
-3. Go to **File → Run SQL Script**
-4. Select `database/schema.sql` from this project
-5. Click **Run**
-6. Verify tables created: users, books, countries, ratings, user_favorites, etc.
+3. **IMPORTANT:** If you get "Table already exists" errors, the script now includes `DROP TABLE` statements to clean up first
+4. Go to **File → Run SQL Script**
+5. Select `database/schema.sql` from this project
+6. Click **Run**
+7. Verify tables created: users, books, countries, ratings, user_favorites, etc.
+
+> **Note:** The schema will DROP and recreate all tables, so any existing data will be lost. Back up first if needed!
 
 ## Required Render Environment Variables
 
