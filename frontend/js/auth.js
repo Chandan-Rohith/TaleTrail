@@ -25,12 +25,6 @@ class AuthManager {
 
             // Update UI based on (possibly updated) auth state
             this.updateUI();
-
-            // If still not authenticated, show auth modal (login) so the user
-            // must either login or sign up before interacting.
-            if (!this.isAuthenticated()) {
-                openAuthModal('login');
-            }
         })();
     }
 
