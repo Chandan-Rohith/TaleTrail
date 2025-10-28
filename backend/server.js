@@ -9,6 +9,7 @@ const bookRoutes = require('./routes/books');
 const countryRoutes = require('./routes/countries');
 const recommendationRoutes = require('./routes/recommendations');
 const userRoutes = require('./routes/user');
+const favoritesRoutes = require('./routes/favorites');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -46,6 +47,7 @@ app.use('/api/books', bookRoutes);
 app.use('/api/countries', countryRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/favorites', favoritesRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
