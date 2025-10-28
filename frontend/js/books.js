@@ -479,7 +479,15 @@ async function loadRecommendations() {
 }
 
 // Event Listeners
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    // Wait for auth to be ready, then load favorites
+    if (authManager && authManager.ready) {
+        await authManager.ready;
+        if (authManager.isAuthenticated()) {
+            await loadUserFavorites();
+        }
+    }
+    
     // Load trending books on page load
     loadTrendingBooks();
     
@@ -498,7 +506,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (bookModal.style.display === 'flex') {
                 closeBookModal();
-            } else if (authModal.style.display === 'flex') {
+            } else if (authModal && authModal.style.display === 'flex') {
                 closeAuthModal();
             }
         }

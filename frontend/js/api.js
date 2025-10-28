@@ -82,6 +82,32 @@ class APIService {
     async getUserStats() {
         return this.makeRequest(`${this.baseURL}/user/stats`);
     }
+
+    // Favorites API
+    async getUserFavorites() {
+        return this.makeRequest(`${this.baseURL}/favorites`);
+    }
+
+    async addFavorite(bookId) {
+        return this.makeRequest(`${this.baseURL}/favorites/${bookId}`, {
+            method: 'POST'
+        });
+    }
+
+    async removeFavorite(bookId) {
+        return this.makeRequest(`${this.baseURL}/favorites/${bookId}`, {
+            method: 'DELETE'
+        });
+    }
+
+    async isFavorite(bookId) {
+        try {
+            const data = await this.getUserFavorites();
+            return data.favorites.some(fav => fav.id === bookId);
+        } catch (error) {
+            return false;
+        }
+    }
 }
 
 // Initialize API service
