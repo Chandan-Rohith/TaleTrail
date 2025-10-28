@@ -24,8 +24,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Add book to favorites
-// Save a book to favorites (protected route)
-router.post('/:bookId', authMiddleware, async (req, res) => {
+router.post('/:bookId', authenticateToken, async (req, res) => {
   try {
     const { bookId } = req.params;
     await db.execute(
@@ -40,8 +39,7 @@ router.post('/:bookId', authMiddleware, async (req, res) => {
 });
 
 // Remove book from favorites
-// Remove a book from favorites (protected route)
-router.delete('/:bookId', authMiddleware, async (req, res) => {
+router.delete('/:bookId', authenticateToken, async (req, res) => {
   try {
     const { bookId } = req.params;
     await db.execute(
