@@ -245,9 +245,19 @@
     <script>
         let likedBooks = [];
         
-        // Check authentication
-        if (!authManager.isAuthenticated()) {
-            window.location.href = 'login.html';
+        // Initialize page after auth is ready
+        async function initializePage() {
+            // Wait for auth manager to verify token
+            await authManager.ready;
+            
+            // Check authentication
+            if (!authManager.isAuthenticated()) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // Load profile data
+            await loadProfile();
         }
         
         // Load profile data
@@ -382,8 +392,8 @@
             window.location.href = 'login.html';
         });
         
-        // Initialize
-        loadProfile();
+        // Initialize page
+        initializePage();
     </script>
 </body>
 </html>

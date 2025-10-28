@@ -199,6 +199,13 @@ h1, h2, h3, h4, h5, h6 {
 .user-name {
   font-weight: 600;
   color: var(--burgundy);
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background 0.3s;
+}
+
+.user-menu:hover .user-name {
+  background: rgba(139, 69, 19, 0.1);
 }
 
 .user-dropdown {
@@ -209,13 +216,20 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   min-width: 180px;
-  display: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s 0.3s;
   margin-top: 10px;
   z-index: 1000;
 }
 
-.user-menu:hover .user-dropdown {
-  display: block;
+.user-menu:hover .user-dropdown,
+.user-dropdown:hover {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s 0s;
 }
 
 .user-dropdown a {
