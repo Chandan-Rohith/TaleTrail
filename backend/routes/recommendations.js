@@ -12,50 +12,78 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
     const { userId } = req.params;
     const limit = parseInt(req.query.limit) || 10;
 
-    // Get user's favorite genres
-    const [favoriteGenres] = await db.execute(`
-      SELECT bg.genre_name, COUNT(*) as count
-      FROM user_favorites uf
-      JOIN book_genre_relations bgr ON uf.book_id = bgr.book_id
-      JOIN book_genres bg ON bgr.genre_id = bg.id
-      WHERE uf.user_id = ?
-      GROUP BY bg.genre_name
-      ORDER BY count DESC
-      LIMIT 3
-    `, [userId]);
+    let books = [];
+    let recommendationType = 'popular';
 
-    let books;
-    if (favoriteGenres.length > 0) {
-      // Get books from favorite genres that user hasn't favorited yet
-      const genreNames = favoriteGenres.map(g => g.genre_name);
-      const placeholders = genreNames.map(() => '?').join(',');
-      
-      const [genreBooks] = await db.execute(`
-        SELECT DISTINCT b.*, c.name as country_name
-        FROM books b
-        LEFT JOIN countries c ON b.country_id = c.id
-        JOIN book_genre_relations bgr ON b.id = bgr.book_id
+    try {
+      // Try to get user's favorite genres (this might fail if genre tables don't exist)
+      const [favoriteGenres] = await db.execute(`
+        SELECT bg.genre_name, COUNT(*) as count
+        FROM user_favorites uf
+        JOIN book_genre_relations bgr ON uf.book_id = bgr.book_id
         JOIN book_genres bg ON bgr.genre_id = bg.id
-        WHERE bg.genre_name IN (${placeholders})
-        AND b.id NOT IN (
-          SELECT book_id FROM user_favorites WHERE user_id = ?
-        )
-        ORDER BY b.average_rating DESC, b.rating_count DESC
-        LIMIT ?
-      `, [...genreNames, userId, limit]);
-      
-      books = genreBooks;
-    } else {
-      // No favorites yet, show popular books
-      const [popularBooks] = await db.execute(`
-        SELECT b.*, c.name as country_name 
-        FROM books b
-        LEFT JOIN countries c ON b.country_id = c.id
-        ORDER BY b.average_rating DESC, b.rating_count DESC
-        LIMIT ?
-      `, [limit]);
-      
-      books = popularBooks;
+        WHERE uf.user_id = ?
+        GROUP BY bg.genre_name
+        ORDER BY count DESC
+        LIMIT 3
+      `, [userId]);
+
+      if (favoriteGenres.length > 0) {
+        // Get books from favorite genres that user hasn't favorited yet
+        const genreNames = favoriteGenres.map(g => g.genre_name);
+        const placeholders = genreNames.map(() => '?').join(',');
+        
+        const [genreBooks] = await db.execute(`
+          SELECT DISTINCT b.*, c.name as country_name
+          FROM books b
+          LEFT JOIN countries c ON b.country_id = c.id
+          JOIN book_genre_relations bgr ON b.id = bgr.book_id
+          JOIN book_genres bg ON bgr.genre_id = bg.id
+          WHERE bg.genre_name IN (${placeholders})
+          AND b.id NOT IN (
+            SELECT book_id FROM user_favorites WHERE user_id = ?
+          )
+          ORDER BY b.average_rating DESC, b.rating_count DESC
+          LIMIT ?
+        `, [...genreNames, userId, limit]);
+        
+        if (genreBooks.length > 0) {
+          books = genreBooks;
+          recommendationType = 'personalized';
+        }
+      }
+    } catch (genreError) {
+      console.log('Genre-based recommendations not available:', genreError.message);
+      // Continue to fallback
+    }
+
+    // Fallback: Show popular books (excluding user's favorites)
+    if (books.length === 0) {
+      try {
+        const [popularBooks] = await db.execute(`
+          SELECT b.*, c.name as country_name 
+          FROM books b
+          LEFT JOIN countries c ON b.country_id = c.id
+          WHERE b.id NOT IN (
+            SELECT COALESCE(book_id, 0) FROM user_favorites WHERE user_id = ?
+          )
+          ORDER BY b.average_rating DESC, b.rating_count DESC
+          LIMIT ?
+        `, [userId, limit]);
+        
+        books = popularBooks;
+      } catch (fallbackError) {
+        // Last resort: just get any popular books
+        const [allBooks] = await db.execute(`
+          SELECT b.*, c.name as country_name 
+          FROM books b
+          LEFT JOIN countries c ON b.country_id = c.id
+          ORDER BY b.average_rating DESC, b.rating_count DESC
+          LIMIT ?
+        `, [limit]);
+        
+        books = allBooks;
+      }
     }
 
     res.json({
@@ -66,13 +94,18 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
         author: book.author,
         country: book.country_name,
         rating: book.average_rating,
-        recommendation_type: favoriteGenres.length > 0 ? 'personalized' : 'popular'
+        recommendation_type: recommendationType
       })),
       total: books.length
     });
   } catch (error) {
     console.error('Error getting user recommendations:', error.message);
-    res.status(500).json({ error: 'Failed to get recommendations', details: error.message });
+    console.error('Stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Failed to get recommendations', 
+      details: error.message,
+      hint: 'This might be due to missing genre data tables'
+    });
   }
 });
 
