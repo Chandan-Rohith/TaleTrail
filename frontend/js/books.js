@@ -2,6 +2,11 @@
 let currentBook = null;
 let userRating = 0;
 
+// Guard: only load books if authenticated
+function canLoadBooks() {
+    return window.authManager && authManager.isAuthenticated();
+}
+
 // Create Book Card HTML
 function createBookCard(book) {
     // Ensure we have valid book data
