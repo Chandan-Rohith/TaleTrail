@@ -154,4 +154,68 @@ router.post('/train', authenticateToken, async (req, res) => {
   }
 });
 
+// Get genre-based personalized recommendations (NEW - no ML service dependency)
+router.get('/personalized', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    
+    // Get user's favorite book genres (most common genres from saved books)
+    const [favoriteGenres] = await db.execute(
+      `SELECT DISTINCT bg.genre_name, COUNT(*) as genre_count
+       FROM user_favorites uf
+       JOIN book_genres bg ON uf.book_id = bg.book_id
+       WHERE uf.user_id = ?
+       GROUP BY bg.genre_name
+       ORDER BY genre_count DESC
+       LIMIT 5`,
+      [userId]
+    );
+
+    if (favoriteGenres.length === 0) {
+      // No favorites yet, return popular/highly-rated books
+      const [popularBooks] = await db.execute(
+        `SELECT b.*, c.name as country_name, c.code as country_code,
+                AVG(r.rating) as average_rating, COUNT(r.id) as rating_count
+         FROM books b
+         LEFT JOIN countries c ON b.country_id = c.id
+         LEFT JOIN ratings r ON b.id = r.book_id
+         GROUP BY b.id
+         ORDER BY average_rating DESC, rating_count DESC
+         LIMIT 12`
+      );
+      return res.json({ books: popularBooks, message: 'Popular books (no favorites yet)' });
+    }
+
+    // Get books with matching genres (excluding already favorited)
+    const genres = favoriteGenres.map(g => g.genre_name);
+    const placeholders = genres.map(() => '?').join(',');
+    
+    const [recommendations] = await db.execute(
+      `SELECT DISTINCT b.*, c.name as country_name, c.code as country_code,
+              AVG(r.rating) as average_rating, COUNT(r.id) as rating_count
+       FROM books b
+       LEFT JOIN countries c ON b.country_id = c.id
+       LEFT JOIN ratings r ON b.id = r.book_id
+       JOIN book_genres bg ON b.id = bg.book_id
+       WHERE bg.genre_name IN (${placeholders})
+       AND b.id NOT IN (
+         SELECT book_id FROM user_favorites WHERE user_id = ?
+       )
+       GROUP BY b.id
+       ORDER BY average_rating DESC, rating_count DESC
+       LIMIT 12`,
+      [...genres, userId]
+    );
+
+    res.json({ 
+      books: recommendations, 
+      based_on_genres: genres,
+      message: `Recommendations based on your favorite genres: ${genres.join(', ')}`
+    });
+  } catch (error) {
+    console.error('Personalized recommendations error:', error);
+    res.status(500).json({ error: 'Failed to get recommendations' });
+  }
+});
+
 module.exports = router;
