@@ -5,10 +5,11 @@ CREATE DATABASE IF NOT EXISTS taletrail_db CHARACTER SET utf8mb4 COLLATE utf8mb4
 USE taletrail_db;
 
 -- Drop existing tables in correct order (respecting foreign keys)
+DROP TABLE IF EXISTS book_genre_relations;
 DROP TABLE IF EXISTS user_interactions;
 DROP TABLE IF EXISTS ratings;
-DROP TABLE IF EXISTS book_genres;
 DROP TABLE IF EXISTS user_favorites;
+DROP TABLE IF EXISTS book_genres;
 DROP TABLE IF EXISTS books;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS countries;
