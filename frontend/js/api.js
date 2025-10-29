@@ -151,6 +151,10 @@ function getToastIcon(type) {
 // Loading States
 function showLoading(containerId, message = 'Loading...') {
     const container = document.getElementById(containerId);
+    if (!container) {
+        console.warn(`Container with id "${containerId}" not found`);
+        return;
+    }
     container.innerHTML = `
         <div class="loading-spinner">
             <i class="fas fa-book-open spin"></i>
@@ -161,6 +165,10 @@ function showLoading(containerId, message = 'Loading...') {
 
 function hideLoading(containerId) {
     const container = document.getElementById(containerId);
+    if (!container) {
+        console.warn(`Container with id "${containerId}" not found`);
+        return;
+    }
     container.innerHTML = '';
 }
 
@@ -228,6 +236,7 @@ function getBookCoverUrl(book) {
         'The Scarlet Letter': 'scarlet_letter.jpg',
         "Harry Potter and the Philosopher's Stone": 'harry-potter.jpg',
         "Harry Potter": 'harry-potter.jpg',
+        'Beloved': 'beloved.jpg',
         
         // French Books
         'The Little Prince': 'little-prince.jpg',
@@ -320,6 +329,7 @@ function getBookCoverUrl(book) {
         if (title.includes('wuthering heights')) return 'images/covers/wuthering_heights.jpg';
         if (title.includes('chronicles') && title.includes('narnia')) return 'images/covers/chronicles_narnia.jpg';
         if (title.includes('water') && title.includes('chocolate')) return 'images/covers/like-water-chocolate.jpg';
+        if (title.includes('beloved')) return 'images/covers/beloved.jpg';
     }
     
     // Then check database cover_image_url
@@ -332,11 +342,11 @@ function getBookCoverUrl(book) {
     }
     
     // Generate placeholder with book title initial
-    const initial = book.title ? book.title.charAt(0).toUpperCase() : 'B';
-    const colors = ['#8B1538', '#E91E63', '#4A148C', '#2E7D32', '#1565C0', '#BF360C', '#F57C00'];
-    const color = colors[(book.id || 0) % colors.length] || '#8B1538';
+    const initial = book.title ? encodeURIComponent(book.title.charAt(0).toUpperCase()) : 'B';
+    const colors = ['8B1538', 'E91E63', '4A148C', '2E7D32', '1565C0', 'BF360C', 'F57C00'];
+    const color = colors[(book.id || 0) % colors.length] || '8B1538';
     
-    return `https://via.placeholder.com/300x400/${color.substring(1)}/ffffff?text=${initial}`;
+    return `https://via.placeholder.com/300x400/${color}/ffffff?text=${initial}`;
 }
 
 function scrollToSection(sectionId) {
@@ -371,9 +381,10 @@ function handleError(error, userMessage = 'Something went wrong') {
 // Handle image loading errors
 function handleImageError(img, initial) {
     img.onerror = null; // Prevent infinite loop
-    const colors = ['#8B1538', '#E91E63', '#4A148C', '#2E7D32', '#1565C0', '#BF360C', '#F57C00'];
-    const color = colors[Math.floor(Math.random() * colors.length)].substring(1);
-    img.src = `https://via.placeholder.com/300x400/${color}/ffffff?text=${encodeURIComponent(initial)}`;
+    const colors = ['8B1538', 'E91E63', '4A148C', '2E7D32', '1565C0', 'BF360C', 'F57C00'];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const encodedInitial = encodeURIComponent(initial || 'B');
+    img.src = `https://via.placeholder.com/300x400/${color}/ffffff?text=${encodedInitial}`;
     img.style.opacity = '1';
 }
 

@@ -376,43 +376,6 @@ function createReadingProgress() {
 }
 
 function addThemeCustomization() {
-    // Add a subtle theme switcher (day/night mode)
-    const themeToggle = document.createElement('button');
-    themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
-    themeToggle.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background: var(--burgundy);
-        color: white;
-        border: none;
-        cursor: pointer;
-        box-shadow: var(--shadow-book);
-        transition: all 0.3s ease;
-        z-index: 1000;
-    `;
-    
-    let isDarkMode = false;
-    themeToggle.addEventListener('click', () => {
-        isDarkMode = !isDarkMode;
-        
-        if (isDarkMode) {
-            document.body.style.filter = 'invert(1) hue-rotate(180deg)';
-            document.querySelectorAll('img').forEach(img => {
-                img.style.filter = 'invert(1) hue-rotate(180deg)';
-            });
-            themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
-        } else {
-            document.body.style.filter = '';
-            document.querySelectorAll('img').forEach(img => {
-                img.style.filter = '';
-            });
-            themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
-        }
-    });
-    
-    document.body.appendChild(themeToggle);
+    // Theme customization removed - using single consistent theme
+    // This function is kept empty for backwards compatibility
 }
