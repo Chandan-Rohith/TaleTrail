@@ -12,6 +12,15 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
     const { userId } = req.params;
     const limit = parseInt(req.query.limit) || 10;
 
+    // Validate userId
+    if (!userId || isNaN(userId)) {
+      return res.status(400).json({ 
+        error: 'Invalid user ID',
+        recommendations: [],
+        total: 0
+      });
+    }
+
     let books = [];
     let recommendationType = 'popular';
 
@@ -28,7 +37,7 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
         LIMIT 3
       `, [userId]);
 
-      if (favoriteGenres.length > 0) {
+      if (favoriteGenres && favoriteGenres.length > 0) {
         // Get books from favorite genres that user hasn't favorited yet
         const genreNames = favoriteGenres.map(g => g.genre_name);
         const placeholders = genreNames.map(() => '?').join(',');
@@ -47,7 +56,7 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
           LIMIT ?
         `, [...genreNames, userId, limit]);
         
-        if (genreBooks.length > 0) {
+        if (genreBooks && genreBooks.length > 0) {
           books = genreBooks;
           recommendationType = 'personalized';
         }
@@ -65,7 +74,7 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
           SELECT book_id FROM user_favorites WHERE user_id = ?
         `, [userId]);
         
-        const favIds = userFavs.map(f => f.book_id);
+        const favIds = userFavs && userFavs.length > 0 ? userFavs.map(f => f.book_id) : [];
         
         if (favIds.length > 0) {
           // Exclude favorites
@@ -79,7 +88,7 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
             LIMIT ?
           `, [...favIds, limit]);
           
-          books = popularBooks;
+          books = popularBooks || [];
         } else {
           // No favorites, just get popular books
           const [popularBooks] = await db.execute(`
@@ -90,42 +99,59 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
             LIMIT ?
           `, [limit]);
           
-          books = popularBooks;
+          books = popularBooks || [];
         }
       } catch (fallbackError) {
-        console.log('Fallback recommendations error:', fallbackError.message);
+        console.error('Fallback recommendations error:', fallbackError.message);
         // Last resort: just get any popular books
-        const [allBooks] = await db.execute(`
-          SELECT b.*, c.name as country_name 
-          FROM books b
-          LEFT JOIN countries c ON b.country_id = c.id
-          ORDER BY b.average_rating DESC, b.rating_count DESC
-          LIMIT ?
-        `, [limit]);
-        
-        books = allBooks;
+        try {
+          const [allBooks] = await db.execute(`
+            SELECT b.*, c.name as country_name 
+            FROM books b
+            LEFT JOIN countries c ON b.country_id = c.id
+            ORDER BY b.average_rating DESC, b.rating_count DESC
+            LIMIT ?
+          `, [limit]);
+          
+          books = allBooks || [];
+        } catch (lastError) {
+          console.error('Last resort query failed:', lastError.message);
+          books = [];
+        }
       }
     }
 
+    // Ensure we have valid data before sending response
+    const validBooks = books.filter(book => book && book.id && book.title);
+
     res.json({
       user_id: parseInt(userId),
-      recommendations: books.map(book => ({
+      recommendations: validBooks.map(book => ({
         book_id: book.id,
+        id: book.id,
         title: book.title,
-        author: book.author,
-        country: book.country_name,
-        rating: book.average_rating,
+        author: book.author || 'Unknown Author',
+        country: book.country_name || 'Unknown',
+        country_name: book.country_name,
+        rating: book.average_rating || 0,
+        average_rating: book.average_rating || 0,
+        description: book.description,
+        cover_image_url: book.cover_image_url,
         recommendation_type: recommendationType
       })),
-      total: books.length
+      total: validBooks.length
     });
   } catch (error) {
     console.error('Error getting user recommendations:', error.message);
     console.error('Stack:', error.stack);
-    res.status(500).json({ 
-      error: 'Failed to get recommendations', 
-      details: error.message,
-      hint: 'This might be due to missing genre data tables'
+    
+    // Return empty recommendations instead of 500 error
+    res.status(200).json({ 
+      user_id: parseInt(req.params.userId),
+      recommendations: [],
+      total: 0,
+      error: 'Failed to get personalized recommendations',
+      fallback: true
     });
   }
 });

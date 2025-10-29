@@ -376,7 +376,8 @@ async function loadRecommendations() {
             CONFIG.RECOMMENDATIONS_LIMIT
         );
         
-        if (response.recommendations && response.recommendations.length > 0) {
+        // Check if response has recommendations or if there was an error with fallback
+        if (response && response.recommendations && response.recommendations.length > 0) {
             container.innerHTML = response.recommendations.map(book => createBookCard(book)).join('');
             
             // Add recommendation badges
@@ -402,6 +403,7 @@ async function loadRecommendations() {
             
         } else {
             // Fall back to popular books if no personalized recommendations
+            console.log('No personalized recommendations, showing popular books');
             const fallbackResponse = await apiService.getBooks({ 
                 sort: 'rating', 
                 order: 'desc', 
@@ -438,7 +440,7 @@ async function loadRecommendations() {
                     grid-column: 1 / -1;
                     text-align: center;
                     padding: 2rem;
-                    background: var(--card-bg);
+                    background: var(--cream-light);
                     border-radius: 15px;
                     margin-bottom: 2rem;
                     border: 2px dashed var(--forest);
@@ -465,16 +467,53 @@ async function loadRecommendations() {
         
     } catch (error) {
         console.error('Error loading recommendations:', error);
-        container.innerHTML = `
-            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-                <i class="fas fa-robot" style="font-size: 3rem; color: var(--golden); margin-bottom: 1rem;"></i>
-                <h3>Recommendations temporarily unavailable</h3>
-                <p>Our AI is taking a coffee break. Try the trending books instead!</p>
-                <button class="btn-secondary" onclick="scrollToSection('trending')" style="margin-top: 1rem;">
-                    <i class="fas fa-fire"></i> View Trending Books
-                </button>
-            </div>
-        `;
+        
+        // Try to fall back to popular books even on error
+        try {
+            const fallbackResponse = await apiService.getBooks({ 
+                sort: 'rating', 
+                order: 'desc', 
+                limit: CONFIG.RECOMMENDATIONS_LIMIT 
+            });
+            
+            if (fallbackResponse.books && fallbackResponse.books.length > 0) {
+                container.innerHTML = fallbackResponse.books.map(book => createBookCard(book)).join('');
+                
+                // Add "Popular" badges
+                const cards = container.querySelectorAll('.book-card');
+                cards.forEach((card, index) => {
+                    const badge = document.createElement('div');
+                    badge.style.cssText = `
+                        position: absolute;
+                        top: 10px;
+                        left: 10px;
+                        background: var(--golden);
+                        color: white;
+                        padding: 5px 10px;
+                        border-radius: 15px;
+                        font-size: 0.8rem;
+                        font-weight: 600;
+                        z-index: 10;
+                    `;
+                    badge.innerHTML = `<i class="fas fa-star"></i> Popular`;
+                    card.style.position = 'relative';
+                    card.appendChild(badge);
+                });
+            } else {
+                throw new Error('No fallback books available');
+            }
+        } catch (fallbackError) {
+            container.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                    <i class="fas fa-robot" style="font-size: 3rem; color: var(--golden); margin-bottom: 1rem;"></i>
+                    <h3>Recommendations temporarily unavailable</h3>
+                    <p>Our AI is taking a coffee break. Try the trending books instead!</p>
+                    <button class="btn-secondary" onclick="scrollToSection('trending')" style="margin-top: 1rem;">
+                        <i class="fas fa-fire"></i> View Trending Books
+                    </button>
+                </div>
+            `;
+        }
     }
 }
 

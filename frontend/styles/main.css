@@ -1001,6 +1001,13 @@ h1, h2, h3, h4, h5, h6 {
   .modal-body {
     padding: 1rem;
   }
+  
+  /* Fix login page title visibility on mobile */
+  #page-title {
+    font-size: clamp(1.5rem, 4vw, 2.5rem) !important;
+    padding: 0.5rem !important;
+    margin-bottom: 1rem !important;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1015,5 +1022,12 @@ h1, h2, h3, h4, h5, h6 {
   
   .section-title {
     font-size: 1.8rem;
+  }
+  
+  /* Ensure login title stays visible on small screens */
+  #page-title {
+    font-size: 1.5rem !important;
+    padding: 0.5rem !important;
+    line-height: 1.2 !important;
   }
 }

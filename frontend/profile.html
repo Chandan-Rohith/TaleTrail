@@ -236,11 +236,49 @@
         </div>
     </div>
 
+    <!-- Book Detail Modal -->
+    <div id="book-modal" class="modal-backdrop" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-book-title">Book Title</h2>
+                <button class="modal-close" onclick="closeBookModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="book-detail-content">
+                    <div class="book-cover">
+                        <img id="modal-book-cover" src="" alt="Book Cover">
+                        <div class="book-rating">
+                            <div class="stars" id="modal-book-stars"></div>
+                            <span id="modal-book-rating">0.0</span>
+                        </div>
+                    </div>
+                    <div class="book-info">
+                        <p class="book-author">by <span id="modal-book-author">Author</span></p>
+                        <p class="book-country">
+                            <i class="fas fa-globe"></i>
+                            <span id="modal-book-country">Country</span>
+                        </p>
+                        <p class="book-year">
+                            <i class="fas fa-calendar"></i>
+                            <span id="modal-book-year">Year</span>
+                        </p>
+                        <div class="book-description">
+                            <p id="modal-book-description">Book description...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="toast-container" class="toast-container"></div>
 
     <script src="js/config.js"></script>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/books.js"></script>
     
     <script>
         let likedBooks = [];
@@ -307,11 +345,12 @@
                                     <img src="${getBookCoverUrl(book)}" 
                                          alt="${book.title}" 
                                          class="liked-book-cover"
-                                         onclick="viewBookDetails(${book.id})">
+                                         onclick="event.preventDefault(); event.stopPropagation(); viewBookDetails(${book.id});"
+                                         onerror="handleImageError(this, '${book.title.charAt(0).toUpperCase()}');">
                                     <div class="liked-book-info">
-                                        <h3 class="liked-book-title" onclick="viewBookDetails(${book.id})">${book.title}</h3>
+                                        <h3 class="liked-book-title" onclick="event.preventDefault(); event.stopPropagation(); viewBookDetails(${book.id});">${book.title}</h3>
                                         <p class="liked-book-author">by ${book.author}</p>
-                                        <button class="unlike-btn" onclick="unlikeBook(${book.id})">
+                                        <button class="unlike-btn" onclick="event.preventDefault(); event.stopPropagation(); unlikeBook(${book.id});">
                                             <i class="fas fa-heart-broken"></i> Unlike
                                         </button>
                                     </div>
@@ -338,21 +377,20 @@
                 "To Kill a Mockingbird": "mockingbird.jpg",
                 "1984": "1984.jpg",
                 "Pride and Prejudice": "pride_prejudice.jpg",
-                "The Great Gatsby": "gatsby.jpg",
-                "Harry Potter and the Philosopher's Stone": "harry_potter.jpg",
-                "The Lord of the Rings": "lotr.jpg",
-                "The Catcher in the Rye": "catcher.jpg",
+                "The Great Gatsby": "great-gatsby.jpg",
+                "Harry Potter and the Philosopher's Stone": "harry-potter.jpg",
+                "The Lord of the Rings": "lord_rings.jpg",
+                "The Catcher in the Rye": "catcher_rye.jpg",
                 "Animal Farm": "animal_farm.jpg",
-                "The Hobbit": "hobbit.jpg",
-                "Fahrenheit 451": "fahrenheit.jpg",
                 "Jane Eyre": "jane_eyre.jpg",
-                "Wuthering Heights": "wuthering.jpg",
+                "Wuthering Heights": "wuthering_heights.jpg",
                 "The Chronicles of Narnia": "chronicles_narnia.jpg",
                 "Crime and Punishment": "crime_punishment.jpg",
                 "The Brothers Karamazov": "brothers_karamazov.jpg",
-                "War and Peace": "war_peace.jpg",
+                "War and Peace": "war-peace.jpg",
                 "Anna Karenina": "anna_karenina.jpg",
                 "Les Miserables": "les_miserables.jpg",
+                "Les Misérables": "les_miserables.jpg",
                 "The Count of Monte Cristo": "monte_cristo.jpg",
                 "Madame Bovary": "madame_bovary.jpg"
             };
@@ -361,7 +399,26 @@
             if (imageName) {
                 return `images/covers/${imageName}`;
             }
-            return book.cover_image || 'images/covers/default.jpg';
+            
+            // Check if book has a cover_image_url field
+            if (book.cover_image_url) {
+                return book.cover_image_url;
+            }
+            
+            // Generate placeholder instead of using default.jpg
+            const initial = book.title ? book.title.charAt(0).toUpperCase() : 'B';
+            const colors = ['#8B1538', '#E91E63', '#4A148C', '#2E7D32', '#1565C0', '#BF360C', '#F57C00'];
+            const color = colors[(book.id || 0) % colors.length] || '#8B1538';
+            return `https://via.placeholder.com/300x400/${color.substring(1)}/ffffff?text=${initial}`;
+        }
+        
+        // Handle image loading errors (imported from books.js pattern)
+        function handleImageError(img, initial) {
+            img.onerror = null; // Prevent infinite loop
+            const colors = ['#8B1538', '#E91E63', '#4A148C', '#2E7D32', '#1565C0', '#BF360C', '#F57C00'];
+            const color = colors[Math.floor(Math.random() * colors.length)].substring(1);
+            img.src = `https://via.placeholder.com/300x400/${color}/ffffff?text=${encodeURIComponent(initial)}`;
+            img.style.opacity = '1';
         }
         
         // Unlike a book
@@ -381,8 +438,19 @@
         }
         
         // View book details
-        function viewBookDetails(bookId) {
-            window.location.href = `main.html?book=${bookId}`;
+        async function viewBookDetails(bookId) {
+            // Prevent default behavior
+            event.preventDefault();
+            event.stopPropagation();
+            
+            // Use the openBookModal function from books.js
+            if (typeof openBookModal === 'function') {
+                await openBookModal(bookId);
+            } else {
+                console.error('openBookModal function not available');
+                // Don't redirect - just show error
+                showToast('Unable to open book details', 'error');
+            }
         }
         
         // Logout
