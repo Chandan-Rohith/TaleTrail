@@ -84,11 +84,6 @@ function createBookCard(book) {
     
     return `
         <div class="book-card" onclick="openBookModal(${bookId})" style="position: relative;">
-            <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" 
-                    onclick="event.stopPropagation(); toggleFavorite(${bookId}, this)"
-                    title="${isFavorited ? 'Remove from favorites' : 'Add to favorites'}">
-                <i class="${isFavorited ? 'fas' : 'far'} fa-heart"></i>
-            </button>
             <div class="book-cover-container">
                 <img src="${coverUrl}" alt="${book.title}" class="book-cover" 
                      onerror="handleImageError(this, '${book.title.charAt(0).toUpperCase()}');"
@@ -103,7 +98,14 @@ function createBookCard(book) {
                 </div>
             </div>
             <div class="book-info">
-                <h3 class="book-title">${book.title || 'Unknown Title'}</h3>
+                <div class="book-title-row">
+                    <h3 class="book-title">${book.title || 'Unknown Title'}</h3>
+                    <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" 
+                            onclick="event.stopPropagation(); toggleFavorite(${bookId}, this)"
+                            title="${isFavorited ? 'Remove from favorites' : 'Add to favorites'}">
+                        <i class="${isFavorited ? 'fas' : 'far'} fa-heart"></i>
+                    </button>
+                </div>
                 <p class="book-author">by ${book.author || 'Unknown Author'}</p>
                 <p class="book-country">
                     <i class="fas fa-globe"></i>
