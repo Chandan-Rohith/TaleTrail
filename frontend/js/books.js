@@ -9,6 +9,7 @@ function canLoadBooks() {
 
 // User favorites cache
 let userFavorites = new Set();
+let favoritesLoaded = false;
 
 // Load user favorites
 async function loadUserFavorites() {
@@ -25,9 +26,11 @@ async function loadUserFavorites() {
         if (response.ok) {
             const data = await response.json();
             userFavorites = new Set(data.favorites.map(f => f.book_id));
+            favoritesLoaded = true;
         }
     } catch (error) {
         console.error('Error loading favorites:', error);
+        favoritesLoaded = true; // Set to true even on error to prevent blocking
     }
 }
 
@@ -306,6 +309,11 @@ async function loadTrendingBooks() {
         return;
     }
     
+    // Wait for favorites to load if user is authenticated
+    if (authManager.isAuthenticated() && !favoritesLoaded) {
+        await loadUserFavorites();
+    }
+    
     try {
         showLoading('trending-books', 'Loading trending books...');
         
@@ -342,6 +350,11 @@ async function loadRecommendations() {
     if (!container) {
         console.warn('Recommendations container not found on this page');
         return;
+    }
+    
+    // Wait for favorites to load if user is authenticated
+    if (authManager.isAuthenticated() && !favoritesLoaded) {
+        await loadUserFavorites();
     }
     
     if (!authManager.isAuthenticated()) {
@@ -428,9 +441,11 @@ async function loadRecommendations() {
                 card.appendChild(badge);
             });
             
+            console.log('✅ Loaded personalized recommendations:', response.recommendations.length);
+            
         } else {
             // Fall back to popular books if no personalized recommendations
-            console.log('No personalized recommendations, showing popular books');
+            console.log('No personalized recommendations available, showing popular books');
             const fallbackResponse = await apiService.getBooks({ 
                 sort: 'rating', 
                 order: 'desc', 
@@ -552,12 +567,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         await authManager.ready;
         if (authManager.isAuthenticated()) {
             await loadUserFavorites();
+            console.log('✅ User favorites loaded:', userFavorites.size, 'books');
         }
     }
     
     // Load trending books on page load (only if container exists)
     if (document.getElementById('trending-books')) {
         loadTrendingBooks();
+    }
+    
+    // Load recommendations if on main page
+    if (document.getElementById('recommended-books')) {
+        loadRecommendations();
     }
     
     // Close modal when clicking backdrop
