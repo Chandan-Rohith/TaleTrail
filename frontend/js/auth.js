@@ -18,8 +18,13 @@ class AuthManager {
                     await this.verifyToken();
                 } catch (error) {
                     console.error('Token verification failed:', error);
-                    // If verification fails, ensure we clear stored credentials
-                    this.logout();
+                    // Only logout if it's not a network error
+                    if (!error.message.includes('Network error')) {
+                        // If verification fails due to invalid token, clear stored credentials
+                        this.logout();
+                    } else {
+                        console.warn('Network error - keeping existing token');
+                    }
                 }
             }
 
@@ -29,18 +34,29 @@ class AuthManager {
     }
 
     async verifyToken() {
-        const response = await fetch(`${CONFIG.API_BASE_URL}/auth/verify`, {
-            headers: {
-                'Authorization': `Bearer ${this.token}`
-            }
-        });
+        try {
+            const response = await fetch(`${CONFIG.API_BASE_URL}/auth/verify`, {
+                headers: {
+                    'Authorization': `Bearer ${this.token}`
+                }
+            });
 
-        if (response.ok) {
-            const data = await response.json();
-            this.user = data.user;
-            return true;
-        } else {
-            throw new Error('Token verification failed');
+            if (response.ok) {
+                const data = await response.json();
+                this.user = data.user;
+                return true;
+            } else {
+                console.error('Token verification failed with status:', response.status);
+                throw new Error('Token verification failed');
+            }
+        } catch (error) {
+            // Check if it's a network/CORS error
+            if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
+                console.error('Network error during token verification:', error);
+                // Don't logout on network errors - keep the token
+                throw new Error('Network error - unable to verify token');
+            }
+            throw error;
         }
     }
 

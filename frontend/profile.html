@@ -286,17 +286,24 @@
         
         // Initialize page after auth is ready
         async function initializePage() {
-            // Wait for auth manager to verify token
-            await authManager.ready;
-            
-            // Check authentication
-            if (!authManager.isAuthenticated()) {
-                window.location.href = 'login.html';
-                return;
+            try {
+                // Wait for auth manager to verify token
+                await authManager.ready;
+                
+                // Check authentication
+                if (!authManager.isAuthenticated()) {
+                    console.log('User not authenticated, redirecting to login');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                // Load profile data
+                await loadProfile();
+            } catch (error) {
+                console.error('Error initializing page:', error);
+                // Don't immediately redirect on error - could be network issue
+                showToast('Unable to verify authentication. Please try refreshing.', 'error');
             }
-            
-            // Load profile data
-            await loadProfile();
         }
         
         // Load profile data
