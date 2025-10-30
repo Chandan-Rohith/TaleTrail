@@ -120,6 +120,11 @@ function createBookCard(book) {
 // Open Book Detail Modal
 async function openBookModal(bookId) {
     const modal = document.getElementById('book-modal');
+    if (!modal) {
+        console.error('Book modal not found on this page');
+        return;
+    }
+    
     const title = document.getElementById('modal-book-title');
     const cover = document.getElementById('modal-book-cover');
     const author = document.getElementById('modal-book-author');
@@ -130,6 +135,11 @@ async function openBookModal(bookId) {
     const stars = document.getElementById('modal-book-stars');
     const reviews = document.getElementById('book-reviews');
     const userRatingSection = document.getElementById('user-rating-section');
+
+    if (!title || !cover || !author) {
+        console.error('Required modal elements not found');
+        return;
+    }
 
     try {
         // Show modal with loading state
@@ -145,24 +155,26 @@ async function openBookModal(bookId) {
         cover.src = getBookCoverUrl(currentBook);
         cover.alt = currentBook.title;
         author.textContent = currentBook.author;
-        country.textContent = currentBook.country_name || 'Unknown';
-        year.textContent = currentBook.publication_year || 'Unknown';
-        description.textContent = currentBook.description || 'No description available.';
+        if (country) country.textContent = currentBook.country_name || 'Unknown';
+        if (year) year.textContent = currentBook.publication_year || 'Unknown';
+        if (description) description.textContent = currentBook.description || 'No description available.';
         
         const bookRating = formatRating(currentBook.average_rating);
-        rating.textContent = `${bookRating} (${currentBook.rating_count || 0} ratings)`;
-        stars.innerHTML = createStars(bookRating);
+        if (rating) rating.textContent = `${bookRating} (${currentBook.rating_count || 0} ratings)`;
+        if (stars) stars.innerHTML = createStars(bookRating);
         
         // Show user rating section if authenticated
-        if (authManager.isAuthenticated()) {
+        if (userRatingSection && authManager.isAuthenticated()) {
             userRatingSection.style.display = 'block';
             setupRatingInput();
-        } else {
+        } else if (userRatingSection) {
             userRatingSection.style.display = 'none';
         }
         
         // Display reviews
-        displayBookReviews(bookData.reviews || []);
+        if (reviews) {
+            displayBookReviews(bookData.reviews || []);
+        }
         
     } catch (error) {
         console.error('Error loading book details:', error);
@@ -173,7 +185,10 @@ async function openBookModal(bookId) {
 
 // Close Book Modal
 function closeBookModal() {
-    document.getElementById('book-modal').style.display = 'none';
+    const modal = document.getElementById('book-modal');
+    if (!modal) return;
+    
+    modal.style.display = 'none';
     currentBook = null;
     userRating = 0;
     
@@ -284,6 +299,11 @@ function displayBookReviews(reviews) {
 async function loadTrendingBooks() {
     const container = document.getElementById('trending-books');
     
+    if (!container) {
+        console.warn('Trending books container not found on this page');
+        return;
+    }
+    
     try {
         showLoading('trending-books', 'Loading trending books...');
         
@@ -316,6 +336,11 @@ async function loadTrendingBooks() {
 // Load User Recommendations
 async function loadRecommendations() {
     const container = document.getElementById('recommended-books');
+    
+    if (!container) {
+        console.warn('Recommendations container not found on this page');
+        return;
+    }
     
     if (!authManager.isAuthenticated()) {
         // Show popular books for non-authenticated users
@@ -503,6 +528,7 @@ async function loadRecommendations() {
                 throw new Error('No fallback books available');
             }
         } catch (fallbackError) {
+            if (!container) return;
             container.innerHTML = `
                 <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
                     <i class="fas fa-robot" style="font-size: 3rem; color: var(--golden); margin-bottom: 1rem;"></i>
@@ -527,15 +553,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // Load trending books on page load
-    loadTrendingBooks();
+    // Load trending books on page load (only if container exists)
+    if (document.getElementById('trending-books')) {
+        loadTrendingBooks();
+    }
     
     // Close modal when clicking backdrop
-    document.getElementById('book-modal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeBookModal();
-        }
-    });
+    const bookModal = document.getElementById('book-modal');
+    if (bookModal) {
+        bookModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeBookModal();
+            }
+        });
+    }
     
     // Handle escape key to close modals
     document.addEventListener('keydown', function(e) {
@@ -543,7 +574,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const bookModal = document.getElementById('book-modal');
             const authModal = document.getElementById('auth-modal');
             
-            if (bookModal.style.display === 'flex') {
+            if (bookModal && bookModal.style.display === 'flex') {
                 closeBookModal();
             } else if (authModal && authModal.style.display === 'flex') {
                 closeAuthModal();
