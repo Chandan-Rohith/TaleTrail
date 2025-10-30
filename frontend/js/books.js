@@ -63,7 +63,17 @@ async function toggleFavorite(bookId, button) {
                 userFavorites.add(bookId);
                 button.innerHTML = '<i class="fas fa-heart"></i>';
                 button.classList.add('favorited');
-                showToast('Added to favorites', 'success');
+                showToast('Added to favorites ❤️', 'success');
+                
+                // If we just added our first few favorites, reload recommendations
+                if (userFavorites.size <= 3) {
+                    const recoContainer = document.getElementById('recommended-books');
+                    if (recoContainer) {
+                        setTimeout(() => {
+                            loadRecommendations();
+                        }, 500);
+                    }
+                }
             }
         }
     } catch (error) {
@@ -476,7 +486,7 @@ async function loadRecommendations() {
                     card.appendChild(badge);
                 });
                 
-                // Show message about rating books
+                // Show message about liking books
                 const messageDiv = document.createElement('div');
                 messageDiv.style.cssText = `
                     grid-column: 1 / -1;
@@ -490,7 +500,7 @@ async function loadRecommendations() {
                 messageDiv.innerHTML = `
                     <i class="fas fa-magic" style="font-size: 2rem; color: var(--forest); margin-bottom: 1rem;"></i>
                     <h3>Building Your Personal Recommendations</h3>
-                    <p>Rate some books below to get AI-powered personalized recommendations!</p>
+                    <p>❤️ Like some books below to get AI-powered personalized recommendations!</p>
                 `;
                 container.insertBefore(messageDiv, container.firstChild);
             } else {
@@ -498,9 +508,9 @@ async function loadRecommendations() {
                     <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
                         <i class="fas fa-magic" style="font-size: 3rem; color: var(--forest); margin-bottom: 1rem;"></i>
                         <h3>Building your recommendations</h3>
-                        <p>Rate some books to get personalized recommendations!</p>
+                        <p>❤️ Like some books to get personalized recommendations!</p>
                         <button class="btn-primary" onclick="scrollToSection('trending')" style="margin-top: 1rem;">
-                            <i class="fas fa-star"></i> Discover Books to Rate
+                            <i class="fas fa-heart"></i> Discover Books to Like
                         </button>
                     </div>
                 `;
@@ -572,13 +582,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     // Load trending books on page load (only if container exists)
+    // AWAIT this to ensure favorites are set before rendering
     if (document.getElementById('trending-books')) {
-        loadTrendingBooks();
+        await loadTrendingBooks();
     }
     
     // Load recommendations if on main page
+    // AWAIT this to ensure proper sequencing
     if (document.getElementById('recommended-books')) {
-        loadRecommendations();
+        await loadRecommendations();
     }
     
     // Close modal when clicking backdrop

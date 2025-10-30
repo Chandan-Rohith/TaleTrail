@@ -356,3 +356,53 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 **Happy Reading! 📚✨**
 
 Enjoy exploring books from around the world with TaleTrail!
+
+## 🏷️ Deployment & Vendor Information
+
+This section lists the platforms, vendors, and deployment recommendations used (or suitable) for TaleTrail.
+
+- Repository / Source Control
+   - GitHub: project hosted in this repository (owner: Chandan-Rohith). Use GitHub for SCM, PRs, and CI integrations.
+
+- Hosting / Platforms
+   - Render: backend and static frontend are deployed on Render in the current setup (example backend URL seen in logs: `https://taletrail-backend-z2xb.onrender.com`, frontend: `https://taletrail-frontend.onrender.com`). Render is a simple option for hosting Node.js APIs, Python services, and static sites.
+   - Alternatives: Netlify / Vercel (frontend static hosting), Heroku, DigitalOcean App Platform, AWS Elastic Beanstalk, or containerized deployments on ECS/GKE.
+
+- Database
+   - MySQL (v8+). Can be hosted locally, on a managed provider (RDS, PlanetScale, ClearDB, DigitalOcean Managed DB), or via cloud DB offerings. Connection settings live in `backend/.env` and `ml-service/.env`.
+
+- ML Service
+   - Python/Flask microservice (`ml-service`) — deploy as a separate service. Render supports running Python Flask apps. Ensure environment variables for DB and API_BASE_URL are set in the service settings.
+
+- Package & Dependency Vendors
+   - Node packages come from npm (package.json in `backend/`).
+   - Python packages come from PyPI (requirements.txt in `ml-service/`).
+
+- Third-party CDNs / Libraries
+   - Font Awesome and Leaflet are referenced via public CDNs in the frontend (e.g. `cdnjs`, `unpkg`). Keep these external references in mind for CSP/CORS and availability.
+
+- Certificates, HTTPS & DNS
+   - Always use HTTPS in production. Most hosting vendors (Render, Netlify, Vercel) provide automatic TLS certificates via Let's Encrypt.
+   - Configure custom domains and DNS records at your registrar or via the hosting provider.
+
+- Environment Variables (important)
+   - Backend (`backend/.env`): PORT, NODE_ENV, DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, JWT_SECRET, CORS_ORIGIN (or use the allowed origins list in `server.js`).
+   - ML Service (`ml-service/.env`): FLASK_PORT, FLASK_ENV, DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, API_BASE_URL.
+   - Frontend: set API base URL (if hosting as static site, set build-time env or use a small runtime config file) to point to the deployed backend.
+
+- Deployment checklist (quick)
+   1. Push code to GitHub (main branch or your deploy branch).
+   2. Create two services on Render (or your host):
+       - Backend service: build command `npm install`, start command `npm start` or `npm run start`; set environment variables; set health check to `/health` or `/api/health`.
+       - ML service: set build command to install dependencies (`pip install -r requirements.txt`) and start command `python app.py` (or use a Procfile-style command); set environment variables.
+       - Frontend: configure static site on Render/Netlify/Vercel pointing to the `frontend` folder (or deploy static build). Set environment variable for API endpoint.
+   3. Set secure secrets (JWT_SECRET, DB password) in the host's environment settings — never commit secrets to repo.
+   4. Configure CORS allowed origins to include your frontend URL(s).
+   5. Verify health endpoints and cross-service connectivity.
+
+- Monitoring & Logs
+   - Use Render/hosted provider logs to monitor API/ML service output. Consider adding a lightweight monitoring/alerting integration (PagerDuty, Sentry, Datadog) for production readiness.
+
+- Notes & Recommendations
+   - For scale, move MySQL to a managed cloud DB and enable read replicas or caching (Redis) for heavy read traffic.
+   - Containerization (Docker) helps standardize deployments and simplifies moving to Kubernetes or other orchestration platforms.
