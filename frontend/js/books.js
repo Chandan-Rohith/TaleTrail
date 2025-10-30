@@ -315,7 +315,7 @@ async function loadTrendingBooks() {
     const container = document.getElementById('trending-books');
     
     if (!container) {
-        console.warn('Trending books container not found on this page');
+        // Silently return if container not found (e.g., on profile page)
         return;
     }
     
@@ -358,7 +358,7 @@ async function loadRecommendations() {
     const container = document.getElementById('recommended-books');
     
     if (!container) {
-        console.warn('Recommendations container not found on this page');
+        // Silently return if container not found (e.g., on profile page)
         return;
     }
     
