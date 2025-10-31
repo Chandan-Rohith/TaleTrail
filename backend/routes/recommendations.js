@@ -24,52 +24,87 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
     let books = [];
     let recommendationType = 'popular';
 
+    // PRIORITY 1: Try ML Service for personalized recommendations
     try {
-      // Try to get user's favorite genres (this might fail if genre tables don't exist)
-      const [favoriteGenres] = await db.execute(`
-        SELECT bg.genre_name, COUNT(*) as count
-        FROM user_favorites uf
-        JOIN book_genre_relations bgr ON uf.book_id = bgr.book_id
-        JOIN book_genres bg ON bgr.genre_id = bg.id
-        WHERE uf.user_id = ?
-        GROUP BY bg.genre_name
-        ORDER BY count DESC
-        LIMIT 3
-      `, [userId]);
+      console.log(`Attempting ML recommendations for user ${userId}`);
+      const mlResponse = await axios.get(`${ML_SERVICE_URL}/recommendations/user/${userId}`, {
+        params: { limit },
+        timeout: 5000
+      });
 
-      if (favoriteGenres && favoriteGenres.length > 0) {
-        // Get books from favorite genres that user hasn't favorited yet
-        const genreNames = favoriteGenres.map(g => g.genre_name);
-        const placeholders = genreNames.map(() => '?').join(',');
+      if (mlResponse.data && mlResponse.data.recommendations && mlResponse.data.recommendations.length > 0) {
+        console.log(`✅ ML Service returned ${mlResponse.data.recommendations.length} recommendations`);
         
-        const [genreBooks] = await db.execute(`
-          SELECT DISTINCT b.*, c.name as country_name
+        // Get full book details from database for each recommendation
+        const bookIds = mlResponse.data.recommendations.map(r => r.book_id);
+        const placeholders = bookIds.map(() => '?').join(',');
+        
+        const [fullBooks] = await db.execute(`
+          SELECT b.*, c.name as country_name 
           FROM books b
           LEFT JOIN countries c ON b.country_id = c.id
-          JOIN book_genre_relations bgr ON b.id = bgr.book_id
-          JOIN book_genres bg ON bgr.genre_id = bg.id
-          WHERE bg.genre_name IN (${placeholders})
-          AND b.id NOT IN (
-            SELECT book_id FROM user_favorites WHERE user_id = ?
-          )
-          ORDER BY b.average_rating DESC, b.rating_count DESC
-          LIMIT ?
-        `, [...genreNames, userId, limit]);
+          WHERE b.id IN (${placeholders})
+        `, bookIds);
         
-        if (genreBooks && genreBooks.length > 0) {
-          books = genreBooks;
-          recommendationType = 'personalized';
-        }
+        books = fullBooks;
+        recommendationType = 'ml_personalized';
       }
-    } catch (genreError) {
-      console.log('Genre-based recommendations not available:', genreError.message);
-      // Continue to fallback
+    } catch (mlError) {
+      console.log('ML Service unavailable, trying favorite-based fallback:', mlError.message);
     }
 
-    // Fallback: Show popular books (excluding user's favorites)
+    // PRIORITY 2: Try favorite-based recommendations
     if (books.length === 0) {
       try {
-        // First, get user's favorites
+        // Get user's favorite books to find similar ones
+        console.log(`🔍 Checking favorites for user ${userId}`);
+        const [userFavs] = await db.execute(`
+          SELECT book_id FROM user_favorites WHERE user_id = ?
+        `, [userId]);
+        
+        console.log(`📚 Found ${userFavs ? userFavs.length : 0} favorites for user ${userId}`);
+        
+        if (userFavs && userFavs.length > 0) {
+          const favIds = userFavs.map(f => f.book_id);
+          console.log(`📖 Favorite book IDs: ${favIds.join(', ')}`);
+          
+          // Get books from same countries/authors as favorites
+          const placeholders = favIds.map(() => '?').join(',');
+          const [similarBooks] = await db.execute(`
+            SELECT DISTINCT b.*, c.name as country_name
+            FROM books b
+            LEFT JOIN countries c ON b.country_id = c.id
+            WHERE (b.country_id IN (
+              SELECT DISTINCT country_id FROM books WHERE id IN (${placeholders})
+            ) OR b.author IN (
+              SELECT DISTINCT author FROM books WHERE id IN (${placeholders})
+            ))
+            AND b.id NOT IN (${placeholders})
+            ORDER BY b.average_rating DESC, b.rating_count DESC
+            LIMIT ?
+          `, [...favIds, ...favIds, ...favIds, limit]);
+          
+          console.log(`🎯 Found ${similarBooks ? similarBooks.length : 0} similar books`);
+          
+          if (similarBooks && similarBooks.length > 0) {
+            books = similarBooks;
+            recommendationType = 'similar_to_favorites';
+            console.log(`✅ Returning ${books.length} books similar to user favorites`);
+          } else {
+            console.log('⚠️ No similar books found, will try popular fallback');
+          }
+        } else {
+          console.log('⚠️ User has no favorites yet');
+        }
+      } catch (favError) {
+        console.error('❌ Favorite-based recommendations failed:', favError.message);
+        console.error('Stack:', favError.stack);
+      }
+    }
+
+    // PRIORITY 3: Fallback to popular books (excluding user's favorites)
+    if (books.length === 0) {
+      try {
         const [userFavs] = await db.execute(`
           SELECT book_id FROM user_favorites WHERE user_id = ?
         `, [userId]);
@@ -77,7 +112,6 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
         const favIds = userFavs && userFavs.length > 0 ? userFavs.map(f => f.book_id) : [];
         
         if (favIds.length > 0) {
-          // Exclude favorites
           const placeholders = favIds.map(() => '?').join(',');
           const [popularBooks] = await db.execute(`
             SELECT b.*, c.name as country_name 
@@ -90,7 +124,6 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
           
           books = popularBooks || [];
         } else {
-          // No favorites, just get popular books
           const [popularBooks] = await db.execute(`
             SELECT b.*, c.name as country_name 
             FROM books b
@@ -103,21 +136,6 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
         }
       } catch (fallbackError) {
         console.error('Fallback recommendations error:', fallbackError.message);
-        // Last resort: just get any popular books
-        try {
-          const [allBooks] = await db.execute(`
-            SELECT b.*, c.name as country_name 
-            FROM books b
-            LEFT JOIN countries c ON b.country_id = c.id
-            ORDER BY b.average_rating DESC, b.rating_count DESC
-            LIMIT ?
-          `, [limit]);
-          
-          books = allBooks || [];
-        } catch (lastError) {
-          console.error('Last resort query failed:', lastError.message);
-          books = [];
-        }
       }
     }
 

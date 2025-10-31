@@ -63,16 +63,15 @@ async function toggleFavorite(bookId, button) {
                 userFavorites.add(bookId);
                 button.innerHTML = '<i class="fas fa-heart"></i>';
                 button.classList.add('favorited');
-                showToast('Added to favorites ❤️', 'success');
+                showToast('Added to favorites ', 'success');
                 
-                // If we just added our first few favorites, reload recommendations
-                if (userFavorites.size <= 3) {
-                    const recoContainer = document.getElementById('recommended-books');
-                    if (recoContainer) {
-                        setTimeout(() => {
-                            loadRecommendations();
-                        }, 500);
-                    }
+                // Reload recommendations after adding favorites
+                const recoContainer = document.getElementById('recommended-books');
+                if (recoContainer) {
+                    console.log('');
+                    setTimeout(() => {
+                        loadRecommendations();
+                    }, 1000);
                 }
             }
         }
@@ -353,7 +352,7 @@ async function loadTrendingBooks() {
     }
 }
 
-// Load User Recommendations
+// Load Popular Books (formerly recommendations)
 async function loadRecommendations() {
     const container = document.getElementById('recommended-books');
     
@@ -367,206 +366,37 @@ async function loadRecommendations() {
         await loadUserFavorites();
     }
     
-    if (!authManager.isAuthenticated()) {
-        // Show popular books for non-authenticated users
-        try {
-            showLoading('recommended-books', 'Loading popular recommendations...');
-            
-            const response = await apiService.getBooks({ 
-                sort: 'rating', 
-                order: 'desc', 
-                limit: CONFIG.RECOMMENDATIONS_LIMIT 
-            });
-            
-            if (response.books && response.books.length > 0) {
-                container.innerHTML = response.books.map(book => createBookCard(book)).join('');
-                
-                // Add "Popular" badges instead of "Recommended"
-                const cards = container.querySelectorAll('.book-card');
-                cards.forEach((card, index) => {
-                    const badge = document.createElement('div');
-                    badge.style.cssText = `
-                        position: absolute;
-                        top: 10px;
-                        left: 10px;
-                        background: var(--golden);
-                        color: white;
-                        padding: 5px 10px;
-                        border-radius: 15px;
-                        font-size: 0.8rem;
-                        font-weight: 600;
-                        z-index: 10;
-                    `;
-                    badge.innerHTML = `<i class="fas fa-star"></i> Popular`;
-                    card.style.position = 'relative';
-                    card.appendChild(badge);
-                });
-            }
-        } catch (error) {
-            console.error('Error loading popular books:', error);
+    // Simply load popular books (highest rated)
+    try {
+        showLoading('recommended-books', 'Loading popular books...');
+        
+        const response = await apiService.getBooks({ 
+            sort: 'rating', 
+            order: 'desc', 
+            limit: CONFIG.RECOMMENDATIONS_LIMIT 
+        });
+        
+        if (response.books && response.books.length > 0) {
+            container.innerHTML = response.books.map(book => createBookCard(book)).join('');
+        } else {
             container.innerHTML = `
                 <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
                     <i class="fas fa-book" style="font-size: 3rem; color: var(--golden); margin-bottom: 1rem;"></i>
-                    <h3>Popular Recommendations</h3>
-                    <p>Login to get personalized recommendations!</p>
-                    <button class="btn-primary" onclick="document.getElementById('auth-modal').style.display='flex'" style="margin-top: 1rem;">
-                        <i class="fas fa-sign-in-alt"></i> Login for Personal Recommendations
-                    </button>
+                    <h3>No books available</h3>
+                    <p>Check back later for popular books!</p>
                 </div>
             `;
-        }
-        return;
-    }
-    
-    try {
-        showLoading('recommended-books', 'Generating personalized recommendations...');
-        
-        const response = await apiService.getUserRecommendations(
-            authManager.user.id, 
-            CONFIG.RECOMMENDATIONS_LIMIT
-        );
-        
-        // Check if response has recommendations or if there was an error with fallback
-        if (response && response.recommendations && response.recommendations.length > 0) {
-            container.innerHTML = response.recommendations.map(book => createBookCard(book)).join('');
-            
-            // Add recommendation badges
-            const cards = container.querySelectorAll('.book-card');
-            cards.forEach((card, index) => {
-                const badge = document.createElement('div');
-                badge.style.cssText = `
-                    position: absolute;
-                    top: 10px;
-                    left: 10px;
-                    background: var(--forest);
-                    color: white;
-                    padding: 5px 10px;
-                    border-radius: 15px;
-                    font-size: 0.8rem;
-                    font-weight: 600;
-                    z-index: 10;
-                `;
-                badge.innerHTML = `<i class="fas fa-magic"></i> Recommended`;
-                card.style.position = 'relative';
-                card.appendChild(badge);
-            });
-            
-            console.log('✅ Loaded personalized recommendations:', response.recommendations.length);
-            
-        } else {
-            // Fall back to popular books if no personalized recommendations
-            console.log('No personalized recommendations available, showing popular books');
-            const fallbackResponse = await apiService.getBooks({ 
-                sort: 'rating', 
-                order: 'desc', 
-                limit: CONFIG.RECOMMENDATIONS_LIMIT 
-            });
-            
-            if (fallbackResponse.books && fallbackResponse.books.length > 0) {
-                container.innerHTML = fallbackResponse.books.map(book => createBookCard(book)).join('');
-                
-                // Add "Popular" badges
-                const cards = container.querySelectorAll('.book-card');
-                cards.forEach((card, index) => {
-                    const badge = document.createElement('div');
-                    badge.style.cssText = `
-                        position: absolute;
-                        top: 10px;
-                        left: 10px;
-                        background: var(--golden);
-                        color: white;
-                        padding: 5px 10px;
-                        border-radius: 15px;
-                        font-size: 0.8rem;
-                        font-weight: 600;
-                        z-index: 10;
-                    `;
-                    badge.innerHTML = `<i class="fas fa-star"></i> Popular`;
-                    card.style.position = 'relative';
-                    card.appendChild(badge);
-                });
-                
-                // Show message about liking books
-                const messageDiv = document.createElement('div');
-                messageDiv.style.cssText = `
-                    grid-column: 1 / -1;
-                    text-align: center;
-                    padding: 2rem;
-                    background: var(--cream-light);
-                    border-radius: 15px;
-                    margin-bottom: 2rem;
-                    border: 2px dashed var(--forest);
-                `;
-                messageDiv.innerHTML = `
-                    <i class="fas fa-magic" style="font-size: 2rem; color: var(--forest); margin-bottom: 1rem;"></i>
-                    <h3>Building Your Personal Recommendations</h3>
-                    <p>❤️ Like some books below to get AI-powered personalized recommendations!</p>
-                `;
-                container.insertBefore(messageDiv, container.firstChild);
-            } else {
-                container.innerHTML = `
-                    <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-                        <i class="fas fa-magic" style="font-size: 3rem; color: var(--forest); margin-bottom: 1rem;"></i>
-                        <h3>Building your recommendations</h3>
-                        <p>❤️ Like some books to get personalized recommendations!</p>
-                        <button class="btn-primary" onclick="scrollToSection('trending')" style="margin-top: 1rem;">
-                            <i class="fas fa-heart"></i> Discover Books to Like
-                        </button>
-                    </div>
-                `;
-            }
         }
         
     } catch (error) {
-        console.error('Error loading recommendations:', error);
-        
-        // Try to fall back to popular books even on error
-        try {
-            const fallbackResponse = await apiService.getBooks({ 
-                sort: 'rating', 
-                order: 'desc', 
-                limit: CONFIG.RECOMMENDATIONS_LIMIT 
-            });
-            
-            if (fallbackResponse.books && fallbackResponse.books.length > 0) {
-                container.innerHTML = fallbackResponse.books.map(book => createBookCard(book)).join('');
-                
-                // Add "Popular" badges
-                const cards = container.querySelectorAll('.book-card');
-                cards.forEach((card, index) => {
-                    const badge = document.createElement('div');
-                    badge.style.cssText = `
-                        position: absolute;
-                        top: 10px;
-                        left: 10px;
-                        background: var(--golden);
-                        color: white;
-                        padding: 5px 10px;
-                        border-radius: 15px;
-                        font-size: 0.8rem;
-                        font-weight: 600;
-                        z-index: 10;
-                    `;
-                    badge.innerHTML = `<i class="fas fa-star"></i> Popular`;
-                    card.style.position = 'relative';
-                    card.appendChild(badge);
-                });
-            } else {
-                throw new Error('No fallback books available');
-            }
-        } catch (fallbackError) {
-            if (!container) return;
-            container.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-                    <i class="fas fa-robot" style="font-size: 3rem; color: var(--golden); margin-bottom: 1rem;"></i>
-                    <h3>Recommendations temporarily unavailable</h3>
-                    <p>Our AI is taking a coffee break. Try the trending books instead!</p>
-                    <button class="btn-secondary" onclick="scrollToSection('trending')" style="margin-top: 1rem;">
-                        <i class="fas fa-fire"></i> View Trending Books
-                    </button>
-                </div>
-            `;
-        }
+        console.error('Error loading popular books:', error);
+        container.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #dc2626; margin-bottom: 1rem;"></i>
+                <h3>Failed to load popular books</h3>
+                <p>Please try again later.</p>
+            </div>
+        `;
     }
 }
 

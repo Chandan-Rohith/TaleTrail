@@ -142,8 +142,6 @@ class AuthManager {
             if (signupBtn) signupBtn.style.display = 'none';
             if (userMenu) userMenu.style.display = 'flex';
             if (userName) userName.textContent = this.user.username;
-            if (recLink) recLink.style.display = 'block';
-            if (recSection) recSection.style.display = 'block';
             
             // Load recommendations if function exists
             if (typeof loadRecommendations === 'function') {
@@ -156,9 +154,11 @@ class AuthManager {
             if (loginBtn) loginBtn.style.display = 'none';
             if (signupBtn) signupBtn.style.display = 'none';
             if (userMenu) userMenu.style.display = 'none';
-            if (recLink) recLink.style.display = 'none';
-            if (recSection) recSection.style.display = 'none';
         }
+        
+        // Always show Popular Books section (formerly recommendations)
+        if (recLink) recLink.style.display = 'block';
+        if (recSection) recSection.style.display = 'block';
     }
 
     isAuthenticated() {
