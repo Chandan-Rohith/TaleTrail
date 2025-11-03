@@ -95,7 +95,7 @@ const allowedOrigins = [
 
 ### Issue: "Database connection failed"
 **Solution:** Update backend environment variables on Render:
-```
+```bash
 DB_HOST=your-mysql-host
 DB_PORT=3306
 DB_USER=your-db-user

@@ -1,14 +1,16 @@
 // Configuration for TaleTrail Frontend
+// Environment detection: localhost, 127.0.0.1, local IPs, and *.local domains treated as development
+const isDevelopment = /^(localhost|127\.0\.0\.1|0\.0\.0\.0|192\.168\.\d{1,3}\.\d{1,3}|.*\.local)$/i.test(window.location.hostname);
+
 const CONFIG = {
-    // API URLs - automatically detect environment
-    // Use Render backend URL in production, localhost in development
-    API_BASE_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    // API URLs - automatically detect environment based on hostname
+    API_BASE_URL: isDevelopment
         ? 'http://localhost:3000/api'
         : 'https://taletrail-backend-z2xb.onrender.com/api',
     
-    ML_API_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ML_API_URL: isDevelopment
         ? 'http://localhost:5000'
-        : 'https://taletrail-ml-service.onrender.com', // Update this with your ML service URL when deployed
+        : 'https://taletrail-ml-service.onrender.com',
     
     // Map configuration
     MAP_CENTER: [20, 0],
