@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 import logging
 
-from recommendation_engine import RecommendationEngine
+from content_based_recommender import ContentBasedRecommender
 
 # Load environment variables
 load_dotenv()
@@ -16,8 +16,14 @@ CORS(app)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize recommendation engine
-rec_engine = RecommendationEngine()
+# Initialize content-based recommendation engine
+print("=" * 60)
+print("🚀 STARTING CONTENT-BASED RECOMMENDATION ENGINE")
+print("=" * 60)
+rec_engine = ContentBasedRecommender()
+print("=" * 60)
+print("✅ ENGINE READY!")
+print("=" * 60)
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -30,76 +36,72 @@ def health_check():
 
 @app.route('/recommendations/user/<int:user_id>', methods=['GET'])
 def get_user_recommendations(user_id):
-    """Get personalized recommendations for a user"""
+    """
+    Get personalized content-based recommendations for a user
+    Based on their favorite books using cosine similarity
+    """
     try:
         limit = request.args.get('limit', 10, type=int)
-        content_weight = request.args.get('content_weight', 0.7, type=float)  # Higher weight for content/genre
-        collab_weight = request.args.get('collab_weight', 0.3, type=float)
-
-        recommendations = rec_engine.get_user_recommendations(
-            user_id, limit, content_weight, collab_weight
-        )
+        
+        logger.info(f"📊 Getting recommendations for user {user_id} (limit={limit})")
+        
+        recommendations = rec_engine.get_recommendations_for_user(user_id, top_k=limit)
         
         return jsonify({
             'user_id': user_id,
             'recommendations': recommendations,
-            'total': len(recommendations)
+            'count': len(recommendations),
+            'method': 'content_based_cosine_similarity'
         })
     except Exception as e:
-        logger.error(f"Error getting recommendations for user {user_id}: {str(e)}")
-        return jsonify({'error': 'Failed to get recommendations'}), 500
+        logger.error(f"Error getting recommendations: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/recommendations/similar/<int:book_id>', methods=['GET'])
 def get_similar_books(book_id):
-    """Get books similar to a given book"""
+    """
+    Get books similar to a given book using cosine similarity
+    """
     try:
         limit = request.args.get('limit', 5, type=int)
         
-        similar_books = rec_engine.get_similar_books(book_id, limit)
+        logger.info(f"🔍 Finding similar books to {book_id} (limit={limit})")
+        
+        similar = rec_engine.get_similar_books(book_id, top_k=limit)
+        
+        # Format response
+        similar_books = []
+        for book_id, score in similar:
+            book_data = rec_engine.books_df[rec_engine.books_df['id'] == book_id].iloc[0].to_dict()
+            book_data['similarity_score'] = score
+            similar_books.append(book_data)
         
         return jsonify({
             'book_id': book_id,
             'similar_books': similar_books,
-            'total': len(similar_books)
+            'count': len(similar_books),
+            'method': 'cosine_similarity'
         })
     except Exception as e:
-        logger.error(f"Error getting similar books for {book_id}: {str(e)}")
-        return jsonify({'error': 'Failed to get similar books'}), 500
+        logger.error(f"Error getting similar books: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
-@app.route('/recommendations/trending', methods=['GET'])
-def get_trending_books():
-    """Get trending books based on recent interactions"""
+@app.route('/recommendations/explain/<int:book_id1>/<int:book_id2>', methods=['GET'])
+def explain_similarity(book_id1, book_id2):
+    """
+    Explain why two books are similar
+    """
     try:
-        limit = request.args.get('limit', 10, type=int)
-        days = request.args.get('days', 7, type=int)
+        explanation = rec_engine.explain_similarity(book_id1, book_id2)
         
-        trending = rec_engine.get_trending_books(limit, days)
-        
-        return jsonify({
-            'trending_books': trending,
-            'period_days': days,
-            'total': len(trending)
-        })
+        if explanation:
+            return jsonify(explanation)
+        else:
+            return jsonify({'error': 'Could not explain similarity'}), 404
+            
     except Exception as e:
-        logger.error(f"Error getting trending books: {str(e)}")
-        return jsonify({'error': 'Failed to get trending books'}), 500
-
-@app.route('/recommendations/genre/<genre>', methods=['GET'])
-def get_genre_recommendations(genre):
-    """Get top books from a specific genre"""
-    try:
-        limit = request.args.get('limit', 10, type=int)
-        
-        books = rec_engine.get_recommendations_by_genre(genre, limit)
-        
-        return jsonify({
-            'genre': genre,
-            'top_books': books,
-            'total': len(books)
-        })
-    except Exception as e:
-        logger.error(f"Error getting books for genre {genre}: {str(e)}")
-        return jsonify({'error': 'Failed to get genre books'}), 500
+        logger.error(f"Error explaining similarity: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/recommendations/user/<int:user_id>/genres', methods=['GET'])
 def get_user_genre_recommendations(user_id):

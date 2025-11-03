@@ -79,7 +79,7 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
     // PRIORITY 2: SQL-based genre recommendations (built-in, no external service needed)
     if (books.length === 0) {
       try {
-        // Get user's favorite books to find similar ones
+        // Get user's favorite books to find similar ones by genres
         console.log(`🔍 Checking favorites for user ${userId}`);
         const [userFavs] = await db.execute(`
           SELECT book_id FROM user_favorites WHERE user_id = ?
@@ -91,30 +91,57 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
           const favIds = userFavs.map(f => f.book_id);
           console.log(`📖 Favorite book IDs: ${favIds.join(', ')}`);
           
-          // Get books from same countries/authors as favorites
-          const placeholders = favIds.map(() => '?').join(',');
-          const [similarBooks] = await db.execute(`
-            SELECT DISTINCT b.*, c.name as country_name
+          // STEP 1: Try genre-based recommendations first (content-based filtering!)
+          const placeholders1 = favIds.map(() => '?').join(',');
+          const [genreBooks] = await db.execute(`
+            SELECT DISTINCT b.*, c.name as country_name,
+                   COUNT(DISTINCT bgr2.genre_id) as matching_genres
             FROM books b
             LEFT JOIN countries c ON b.country_id = c.id
-            WHERE (b.country_id IN (
-              SELECT DISTINCT country_id FROM books WHERE id IN (${placeholders})
-            ) OR b.author IN (
-              SELECT DISTINCT author FROM books WHERE id IN (${placeholders})
-            ))
-            AND b.id NOT IN (${placeholders})
-            ORDER BY b.average_rating DESC, b.rating_count DESC
+            LEFT JOIN book_genre_relations bgr2 ON b.id = bgr2.book_id
+            WHERE bgr2.genre_id IN (
+              SELECT DISTINCT genre_id 
+              FROM book_genre_relations 
+              WHERE book_id IN (${placeholders1})
+            )
+            AND b.id NOT IN (${placeholders1})
+            GROUP BY b.id
+            ORDER BY matching_genres DESC, b.average_rating DESC, b.rating_count DESC
             LIMIT ?
-          `, [...favIds, ...favIds, ...favIds, limit]);
+          `, [...favIds, ...favIds, limit]);
           
-          console.log(`🎯 Found ${similarBooks ? similarBooks.length : 0} similar books`);
+          console.log(`🎨 Found ${genreBooks ? genreBooks.length : 0} books with matching genres`);
           
-          if (similarBooks && similarBooks.length > 0) {
-            books = similarBooks;
-            recommendationType = 'similar_to_favorites';
-            console.log(`✅ Returning ${books.length} books similar to user favorites`);
+          if (genreBooks && genreBooks.length > 0) {
+            books = genreBooks;
+            recommendationType = 'genre_based';
+            console.log(`✅ Returning ${books.length} genre-based recommendations`);
           } else {
-            console.log('⚠️ No similar books found, will try popular fallback');
+            // STEP 2: Fallback to country/author similarity
+            const placeholders2 = favIds.map(() => '?').join(',');
+            const [similarBooks] = await db.execute(`
+              SELECT DISTINCT b.*, c.name as country_name
+              FROM books b
+              LEFT JOIN countries c ON b.country_id = c.id
+              WHERE (b.country_id IN (
+                SELECT DISTINCT country_id FROM books WHERE id IN (${placeholders2})
+              ) OR b.author IN (
+                SELECT DISTINCT author FROM books WHERE id IN (${placeholders2})
+              ))
+              AND b.id NOT IN (${placeholders2})
+              ORDER BY b.average_rating DESC, b.rating_count DESC
+              LIMIT ?
+            `, [...favIds, ...favIds, ...favIds, limit]);
+            
+            console.log(`🎯 Found ${similarBooks ? similarBooks.length : 0} books by country/author`);
+            
+            if (similarBooks && similarBooks.length > 0) {
+              books = similarBooks;
+              recommendationType = 'similar_to_favorites';
+              console.log(`✅ Returning ${books.length} books similar to user favorites`);
+            } else {
+              console.log('⚠️ No similar books found, will try popular fallback');
+            }
           }
         } else {
           console.log('⚠️ User has no favorites yet');
