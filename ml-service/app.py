@@ -33,8 +33,8 @@ def get_user_recommendations(user_id):
     """Get personalized recommendations for a user"""
     try:
         limit = request.args.get('limit', 10, type=int)
-        content_weight = request.args.get('content_weight', 0.6, type=float)
-        collab_weight = request.args.get('collab_weight', 0.4, type=float)
+        content_weight = request.args.get('content_weight', 0.7, type=float)  # Higher weight for content/genre
+        collab_weight = request.args.get('collab_weight', 0.3, type=float)
 
         recommendations = rec_engine.get_user_recommendations(
             user_id, limit, content_weight, collab_weight
@@ -101,6 +101,23 @@ def get_genre_recommendations(genre):
         logger.error(f"Error getting books for genre {genre}: {str(e)}")
         return jsonify({'error': 'Failed to get genre books'}), 500
 
+@app.route('/recommendations/user/<int:user_id>/genres', methods=['GET'])
+def get_user_genre_recommendations(user_id):
+    """Get recommendations based on user's favorite genres"""
+    try:
+        limit = request.args.get('limit', 10, type=int)
+        
+        books = rec_engine.get_books_by_genres(user_id, limit)
+        
+        return jsonify({
+            'user_id': user_id,
+            'genre_based_recommendations': books,
+            'total': len(books)
+        })
+    except Exception as e:
+        logger.error(f"Error getting genre recommendations for user {user_id}: {str(e)}")
+        return jsonify({'error': 'Failed to get genre recommendations'}), 500
+
 @app.route('/recommendations/country/<country_code>', methods=['GET'])
 def get_country_recommendations(country_code):
     """Get top books from a specific country"""
@@ -133,9 +150,9 @@ def train_models():
 
 if __name__ == '__main__':
     port = int(os.environ.get('FLASK_PORT', 5001))
-    debug = os.environ.get('FLASK_ENV') == 'development'
+    debug = os.environ.get('FLASK_DEBUG', '').lower() in ['true', '1', 'yes']
     
     logger.info(f"🚀 Starting TaleTrail ML Service on port {port}")
     logger.info("📚 Ready to generate book recommendations!")
     
-    app.run(host='0.0.0.0', port=port, debug=debug)
+    app.run(host='0.0.0.0', port=port, debug=debug, use_reloader=False)
