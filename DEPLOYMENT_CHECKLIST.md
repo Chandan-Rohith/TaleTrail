@@ -32,16 +32,23 @@
   - Click again → removes from favorites
   - Check `/api/favorites` → should list saved books
 
-### 6. ✅ ML Recommendations Working
-- **Fixed:** Added `/api/recommendations/personalized` route
+### 6. ✅ ML Recommendations Working (Content-Based Filtering)
+- **Fixed:** 
+  - Implemented content-based filtering with genre emphasis (70% content, 30% collaborative)
+  - Genres get 5x weight in TF-IDF feature vector
+  - Added genre overlap bonus (+0.2 per matching genre)
+  - New endpoint: `/api/recommendations/user/{id}/genres`
+  - ML service must be deployed separately
 - **Logic:** 
-  - Analyzes user's saved books' genres
-  - Recommends books from same genres
-  - Excludes already-favorited books
-  - Falls back to popular books if no favorites yet
+  - Analyzes user's highly-rated books (4-5 stars)
+  - Identifies favorite genres
+  - Recommends books matching those genres
+  - Books with multiple genre matches get priority
+  - Falls back to trending books if no ratings yet
 - **Test:** 
-  - Save 2-3 books with similar genres
-  - Check recommendations section → should show related books
+  - Rate 2-3 books with similar genres (4-5 stars)
+  - Check recommendations section → should show books from those genres
+  - Books matching 2+ genres appear higher in list
 
 ### 7. ✅ Database Setup Guide
 - **Fixed:** Created comprehensive `DATABASE_SETUP.md` with:
@@ -57,9 +64,32 @@
 
 ## 🚀 Deployment Steps (Render)
 
+### ML Service Deployment (NEW!)
+
+1. **Create New Web Service on Render:**
+   - Service Name: `taletrail-ml-service`
+   - Region: Same as backend
+   - Root Directory: `ml-service`
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `gunicorn --bind 0.0.0.0:$PORT app:app`
+
+2. **Set ML Service Environment Variables:**
+   ```
+   DB_HOST=your-cloud-mysql-host
+   DB_USER=your-mysql-user
+   DB_PASSWORD=your-mysql-password
+   DB_NAME=taletrail_db
+   PORT=10000
+   FLASK_PORT=10000
+   ```
+
+3. **Get ML Service URL:**
+   - After deployment, copy the service URL (e.g., `https://taletrail-ml.onrender.com`)
+   - You'll need this for the backend configuration
+
 ### Backend Deployment
 
-1. **Push to GitHub** ✅ (Already done - latest commit: 2c2f857)
+1. **Push to GitHub** ✅ (Already done - latest commit includes content-based filtering)
 
 2. **Set Environment Variables in Render:**
    ```
@@ -70,7 +100,10 @@
    JWT_SECRET=random-32-char-string-here
    NODE_ENV=production
    PORT=3000
+   ML_SERVICE_URL=https://taletrail-ml.onrender.com
    ```
+   
+   ⚠️ **IMPORTANT:** Add `ML_SERVICE_URL` pointing to your deployed ML service!
 
 3. **Wait for Auto-Deploy**
    - Render detects GitHub push

@@ -40,8 +40,8 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
       const mlResponse = await axios.get(`${ML_SERVICE_URL}/recommendations/user/${userId}`, {
         params: { 
           limit,
-          content_weight: 0.6,
-          collab_weight: 0.4
+          content_weight: 0.7,  // Increased for genre emphasis
+          collab_weight: 0.3
         },
         timeout: 5000
       });
