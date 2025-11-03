@@ -387,6 +387,8 @@ async function loadTrendingBooks() {
 // Load Popular Books or ML Recommendations
 async function loadRecommendations() {
     const container = document.getElementById('recommended-books');
+    const titleElement = document.getElementById('recommendations-title');
+    const subtitleElement = document.getElementById('recommendations-subtitle');
     
     if (!container) {
         // Silently return if container not found (e.g., on profile page)
@@ -415,6 +417,15 @@ async function loadRecommendations() {
                 if (mlResponse.recommendations && mlResponse.recommendations.length > 0) {
                     response = { books: mlResponse.recommendations };
                     isMLRecommendation = true;
+                    
+                    // Update title for ML recommendations
+                    if (titleElement) {
+                        titleElement.textContent = '✨ Recommended For You';
+                    }
+                    if (subtitleElement) {
+                        subtitleElement.textContent = 'Personalized recommendations based on your favorite books';
+                    }
+                    
                     console.log('✅ Loaded ML-based recommendations:', mlResponse.recommendations.length, 'books');
                 } else {
                     console.log('⚠️ ML service returned empty recommendations');
@@ -434,6 +445,15 @@ async function loadRecommendations() {
                 limit: CONFIG.RECOMMENDATIONS_LIMIT 
             });
             isMLRecommendation = false;
+            
+            // Update title for popular books fallback
+            if (titleElement) {
+                titleElement.textContent = '📚 Popular Books';
+            }
+            if (subtitleElement) {
+                subtitleElement.textContent = 'Highly-rated books loved by readers worldwide';
+            }
+            
             console.log('📚 Showing popular books as fallback');
         }
         
