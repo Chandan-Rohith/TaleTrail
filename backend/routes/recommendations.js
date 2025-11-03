@@ -1,13 +1,20 @@
 const express = require('express');
 const db = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
-const axios = require('axios');
 const router = express.Router();
 
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5001';
+// Try to use ML service if available, otherwise use SQL-based recommendations
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || null;
+let axios;
+if (ML_SERVICE_URL) {
+  axios = require('axios');
+}
 
 // Helper function to check if ML service is available
 async function checkMLService() {
+  if (!ML_SERVICE_URL || !axios) {
+    return false;
+  }
   try {
     await axios.get(`${ML_SERVICE_URL}/health`, { timeout: 2000 });
     return true;
@@ -34,40 +41,42 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
     let books = [];
     let recommendationType = 'popular';
 
-    // PRIORITY 1: Try ML Service for personalized recommendations
-    try {
-      console.log(`🤖 Attempting ML recommendations for user ${userId}`);
-      const mlResponse = await axios.get(`${ML_SERVICE_URL}/recommendations/user/${userId}`, {
-        params: { 
-          limit,
-          content_weight: 0.7,  // Increased for genre emphasis
-          collab_weight: 0.3
-        },
-        timeout: 5000
-      });
+    // PRIORITY 1: Try ML Service for personalized recommendations (if configured)
+    if (ML_SERVICE_URL && axios) {
+      try {
+        console.log(`🤖 Attempting ML recommendations for user ${userId}`);
+        const mlResponse = await axios.get(`${ML_SERVICE_URL}/recommendations/user/${userId}`, {
+          params: { 
+            limit,
+            content_weight: 0.7,  // Increased for genre emphasis
+            collab_weight: 0.3
+          },
+          timeout: 5000
+        });
 
-      if (mlResponse.data && mlResponse.data.recommendations && mlResponse.data.recommendations.length > 0) {
-        console.log(`✅ ML Service returned ${mlResponse.data.recommendations.length} recommendations`);
-        
-        // Get full book details from database for each recommendation
-        const bookIds = mlResponse.data.recommendations.map(r => r.book_id);
-        const placeholders = bookIds.map(() => '?').join(',');
-        
-        const [fullBooks] = await db.execute(`
-          SELECT b.*, c.name as country_name 
-          FROM books b
-          LEFT JOIN countries c ON b.country_id = c.id
-          WHERE b.id IN (${placeholders})
-        `, bookIds);
-        
-        books = fullBooks;
-        recommendationType = 'ml_personalized';
+        if (mlResponse.data && mlResponse.data.recommendations && mlResponse.data.recommendations.length > 0) {
+          console.log(`✅ ML Service returned ${mlResponse.data.recommendations.length} recommendations`);
+          
+          // Get full book details from database for each recommendation
+          const bookIds = mlResponse.data.recommendations.map(r => r.book_id);
+          const placeholders = bookIds.map(() => '?').join(',');
+          
+          const [fullBooks] = await db.execute(`
+            SELECT b.*, c.name as country_name 
+            FROM books b
+            LEFT JOIN countries c ON b.country_id = c.id
+            WHERE b.id IN (${placeholders})
+          `, bookIds);
+          
+          books = fullBooks;
+          recommendationType = 'ml_personalized';
+        }
+      } catch (mlError) {
+        console.log('ML Service unavailable, using SQL-based fallback:', mlError.message);
       }
-    } catch (mlError) {
-      console.log('ML Service unavailable, trying favorite-based fallback:', mlError.message);
     }
 
-    // PRIORITY 2: Try favorite-based recommendations
+    // PRIORITY 2: SQL-based genre recommendations (built-in, no external service needed)
     if (books.length === 0) {
       try {
         // Get user's favorite books to find similar ones

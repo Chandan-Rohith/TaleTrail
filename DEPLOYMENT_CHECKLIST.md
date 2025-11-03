@@ -71,14 +71,34 @@
    - Region: Same as backend
    - Root Directory: `ml-service`
    - Build Command: `pip install -r requirements.txt`
-   - Start Command: `gunicorn --bind 0.0.0.0:$PORT app:app`
+   - Start Command: `bash start.sh`
 
 2. **Set ML Service Environment Variables:**
    ```
+   FLASK_PORT=5001
+   FLASK_DEBUG=false
    DB_HOST=your-cloud-mysql-host
    DB_USER=your-mysql-user
    DB_PASSWORD=your-mysql-password
    DB_NAME=taletrail_db
+   PYTHONUNBUFFERED=1
+   ```
+
+3. **After ML Service Deploys:**
+   - Copy ML service URL (e.g., `https://taletrail-ml-service.onrender.com`)
+   - Add to **Backend** environment variables:
+     ```
+     ML_SERVICE_URL=https://taletrail-ml-service.onrender.com
+     ```
+   - Redeploy backend to pick up new URL
+
+4. **Verify ML Service:**
+   ```bash
+   curl https://taletrail-ml-service.onrender.com/health
+   ```
+   Should return: `{"status":"OK","service":"recommendation-engine"}`
+
+📖 **See `ml-service/RENDER_DEPLOYMENT.md` for detailed instructions**
    PORT=10000
    FLASK_PORT=10000
    ```
