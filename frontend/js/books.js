@@ -433,6 +433,8 @@ async function loadRecommendations() {
             CONFIG.RECOMMENDATIONS_LIMIT
         );
         
+        console.log('📊 Full ML Response:', mlResponse);
+        
         // Check if we got recommendations
         if (mlResponse.recommendations && mlResponse.recommendations.length > 0) {
             // Update title for ML recommendations
