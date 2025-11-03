@@ -133,26 +133,30 @@ router.get('/trending', async (req, res) => {
     
     console.log('Fetching trending books with limit:', limitNum);
     
-    // Use GROUP BY to ensure only one book per title+author combination
-    // This fixes duplicate books in the database
+    // Deduplication via subquery - returns canonical row per (title, author)
+    // See DUPLICATE_BOOKS_FIX_SUMMARY.md for background on database cleanup
     const [books] = await db.query(`
       SELECT 
-        MIN(b.id) as id,
+        b.id,
         b.title,
         b.author,
-        MAX(b.description) as description,
-        MAX(b.cover_image_url) as cover_image_url,
-        MAX(b.average_rating) as average_rating,
-        MAX(b.rating_count) as rating_count,
-        MAX(c.name) as country_name,
-        MAX(c.code) as country_code
+        b.description,
+        b.cover_image_url,
+        b.average_rating,
+        b.rating_count,
+        c.name as country_name,
+        c.code as country_code
       FROM books b
       LEFT JOIN countries c ON b.country_id = c.id
       WHERE b.rating_count > 0
-      GROUP BY b.title, b.author
+        AND b.id IN (
+          SELECT MIN(id) 
+          FROM books 
+          GROUP BY title, author
+        )
       ORDER BY 
-        (MAX(b.average_rating) * MAX(b.rating_count)) DESC,
-        MAX(b.rating_count) DESC
+        (b.average_rating * b.rating_count) DESC,
+        b.rating_count DESC
       LIMIT ${limitNum}
     `);
 

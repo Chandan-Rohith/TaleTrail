@@ -1,17 +1,18 @@
 # PowerShell script to run SQL files in order
 # Run this script from PowerShell with: .\run_sql_files.ps1
+# Security Note: Uses mysql_config_editor for secure credential storage
+# Setup: Run "mysql_config_editor set --login-path=taletrail --host=localhost --user=root --password"
 
 Write-Host "🚀 TaleTrail Database Setup Script" -ForegroundColor Cyan
 Write-Host "=================================" -ForegroundColor Cyan
 Write-Host ""
-
-# Prompt for MySQL password
-$password = Read-Host "Enter MySQL root password" -AsSecureString
-$BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($password)
-$plainPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+Write-Host "NOTE: This script uses mysql_config_editor for secure credentials." -ForegroundColor Yellow
+Write-Host "If not configured, run: mysql_config_editor set --login-path=taletrail --host=localhost --user=root --password" -ForegroundColor Yellow
+Write-Host ""
 
 # Database name
 $dbName = "taletrail_db"
+$loginPath = "taletrail"
 
 # SQL files to run in order
 $sqlFiles = @(
@@ -29,11 +30,8 @@ foreach ($file in $sqlFiles) {
     if (Test-Path $filePath) {
         Write-Host "📄 Running: $file" -ForegroundColor Yellow
         
-        # Read the SQL file content
-        $sqlContent = Get-Content $filePath -Raw
-        
-        # Execute using mysql command
-        $sqlContent | mysql -u root -p"$plainPassword" $dbName 2>&1
+        # Execute using mysql with login-path (no password exposure)
+        Get-Content $filePath -Raw | mysql --login-path=$loginPath $dbName 2>&1
         
         if ($LASTEXITCODE -eq 0) {
             Write-Host "✅ Successfully executed: $file" -ForegroundColor Green

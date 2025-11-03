@@ -30,7 +30,7 @@ ORDER BY ...
 
 This ensures the API **always returns unique books** even with duplicates in the database.
 
-###2. ✅ Frontend Deduplication (`frontend/js/books.js`)
+### 2. ✅ Frontend Deduplication (`frontend/js/books.js`)
 Added Set-based deduplication as a safety net:
 
 ```javascript

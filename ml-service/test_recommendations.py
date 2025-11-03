@@ -4,13 +4,16 @@ import json
 # Base URL for the ML service
 BASE_URL = "http://localhost:5001"
 
+# Request timeout in seconds (prevents indefinite hangs)
+REQUEST_TIMEOUT = 5
+
 def test_health():
     """Test health check endpoint"""
     print("=" * 60)
     print("Testing Health Check Endpoint")
     print("=" * 60)
     try:
-        response = requests.get(f"{BASE_URL}/health")
+        response = requests.get(f"{BASE_URL}/health", timeout=REQUEST_TIMEOUT)
         print(f"Status Code: {response.status_code}")
         print(f"Response: {json.dumps(response.json(), indent=2)}")
         print()
@@ -24,7 +27,7 @@ def test_trending_books():
     print("Testing Trending Books Endpoint")
     print("=" * 60)
     try:
-        response = requests.get(f"{BASE_URL}/recommendations/trending?limit=5")
+        response = requests.get(f"{BASE_URL}/recommendations/trending?limit=5", timeout=REQUEST_TIMEOUT)
         print(f"Status Code: {response.status_code}")
         print(f"Response: {json.dumps(response.json(), indent=2)}")
         print()
@@ -38,7 +41,7 @@ def test_user_recommendations(user_id=1):
     print(f"Testing User Recommendations Endpoint (User ID: {user_id})")
     print("=" * 60)
     try:
-        response = requests.get(f"{BASE_URL}/recommendations/user/{user_id}?limit=5")
+        response = requests.get(f"{BASE_URL}/recommendations/user/{user_id}?limit=5", timeout=REQUEST_TIMEOUT)
         print(f"Status Code: {response.status_code}")
         print(f"Response: {json.dumps(response.json(), indent=2)}")
         print()
@@ -52,7 +55,7 @@ def test_similar_books(book_id=1):
     print(f"Testing Similar Books Endpoint (Book ID: {book_id})")
     print("=" * 60)
     try:
-        response = requests.get(f"{BASE_URL}/recommendations/similar/{book_id}?limit=5")
+        response = requests.get(f"{BASE_URL}/recommendations/similar/{book_id}?limit=5", timeout=REQUEST_TIMEOUT)
         print(f"Status Code: {response.status_code}")
         print(f"Response: {json.dumps(response.json(), indent=2)}")
         print()
@@ -66,7 +69,7 @@ def test_genre_recommendations(genre="fiction"):
     print(f"Testing Genre Recommendations Endpoint (Genre: {genre})")
     print("=" * 60)
     try:
-        response = requests.get(f"{BASE_URL}/recommendations/genre/{genre}?limit=5")
+        response = requests.get(f"{BASE_URL}/recommendations/genre/{genre}?limit=5", timeout=REQUEST_TIMEOUT)
         print(f"Status Code: {response.status_code}")
         print(f"Response: {json.dumps(response.json(), indent=2)}")
         print()
@@ -80,7 +83,7 @@ def test_country_recommendations(country_code="US"):
     print(f"Testing Country Recommendations Endpoint (Country: {country_code})")
     print("=" * 60)
     try:
-        response = requests.get(f"{BASE_URL}/recommendations/country/{country_code}?limit=5")
+        response = requests.get(f"{BASE_URL}/recommendations/country/{country_code}?limit=5", timeout=REQUEST_TIMEOUT)
         print(f"Status Code: {response.status_code}")
         print(f"Response: {json.dumps(response.json(), indent=2)}")
         print()

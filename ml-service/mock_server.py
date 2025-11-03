@@ -20,7 +20,10 @@ def user_recs(user_id):
 
 
 if __name__ == '__main__':
-    # Allow overriding port via MOCK_PORT env var for flexibility
+    # SECURITY: Bind to localhost only for local development
+    # Use 0.0.0.0 only for temporary integration tests, never in production
+    # Override via MOCK_HOST env var if needed
     import os
+    host = os.environ.get('MOCK_HOST', '127.0.0.1')
     port = int(os.environ.get('MOCK_PORT', 5001))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host=host, port=port)

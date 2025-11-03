@@ -33,7 +33,7 @@
 **For Windows Command Prompt:**
 
 ```cmd
-cd c:\Users\chand\OneDrive\Desktop\PROJECT\taletrail\database
+cd database
 run_sql_files.bat
 ```
 
@@ -49,7 +49,7 @@ The script will:
 **For PowerShell:**
 
 ```powershell
-cd c:\Users\chand\OneDrive\Desktop\PROJECT\taletrail\database
+cd database
 .\run_sql_files.ps1
 ```
 
@@ -60,7 +60,7 @@ cd c:\Users\chand\OneDrive\Desktop\PROJECT\taletrail\database
 **Open Command Prompt and run:**
 
 ```cmd
-cd c:\Users\chand\OneDrive\Desktop\PROJECT\taletrail\database
+cd database
 
 mysql -u root -p taletrail_db < sample_data.sql
 mysql -u root -p taletrail_db < add_more_books.sql
@@ -74,7 +74,7 @@ mysql -u root -p taletrail_db < add_books_corrected.sql
 After running the SQL files, verify that books were added:
 
 ```cmd
-cd c:\Users\chand\OneDrive\Desktop\PROJECT\taletrail\backend
+cd backend
 node check-data.js
 ```
 

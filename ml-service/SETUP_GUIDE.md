@@ -17,16 +17,19 @@ copy .env.example .env
 
 Make sure the database credentials in `ml-service/.env` **match** your `backend/.env`:
 
+**IMPORTANT:** Use secure secrets management in production. Never commit real credentials to version control.
+
 ```env
 # ML Service Environment Variables
 FLASK_PORT=5001
 FLASK_ENV=development
 
 # Database Configuration (MUST match backend/.env)
+# SECURITY: Replace placeholders with actual values in your local .env (excluded from git)
 DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
-DB_PASSWORD=panduorange
+DB_PASSWORD=YOUR_DB_PASSWORD
 DB_NAME=taletrail_db
 
 # Main API URL (Backend API)
