@@ -116,4 +116,48 @@ router.post('/assign-all-genres', async (req, res) => {
     }
 });
 
+// Debug endpoint to check if a token belongs to which user
+router.post('/debug-token', async (req, res) => {
+    try {
+        const { token } = req.body;
+        
+        if (!token) {
+            return res.status(400).json({ error: 'Token required' });
+        }
+        
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key-change-in-production');
+        
+        // Get user info
+        const [users] = await db.execute(
+            'SELECT id, username, email FROM users WHERE id = ?',
+            [decoded.userId]
+        );
+        
+        if (users.length === 0) {
+            return res.json({
+                decoded,
+                userExists: false,
+                message: 'Token is valid but user does not exist in database'
+            });
+        }
+        
+        // Get favorites count
+        const [favs] = await db.execute(
+            'SELECT COUNT(*) as count FROM user_favorites WHERE user_id = ?',
+            [decoded.userId]
+        );
+        
+        res.json({
+            decoded,
+            userExists: true,
+            user: users[0],
+            favoritesCount: favs[0].count
+        });
+        
+    } catch (error) {
+        res.status(400).json({ error: 'Invalid token', details: error.message });
+    }
+});
+
 module.exports = router;
