@@ -94,7 +94,9 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
           // STEP 1: Try genre-based recommendations first (content-based filtering!)
           const placeholders1 = favIds.map(() => '?').join(',');
           const [genreBooks] = await db.execute(`
-            SELECT DISTINCT b.*, c.name as country_name,
+            SELECT b.id, b.title, b.author, b.description, b.cover_image_url, 
+                   b.average_rating, b.rating_count, b.publication_year,
+                   c.name as country_name, c.id as country_id,
                    COUNT(DISTINCT bgr2.genre_id) as matching_genres
             FROM books b
             LEFT JOIN countries c ON b.country_id = c.id
@@ -105,7 +107,9 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
               WHERE book_id IN (${placeholders1})
             )
             AND b.id NOT IN (${placeholders1})
-            GROUP BY b.id
+            GROUP BY b.id, b.title, b.author, b.description, b.cover_image_url,
+                     b.average_rating, b.rating_count, b.publication_year,
+                     c.name, c.id
             ORDER BY matching_genres DESC, b.average_rating DESC, b.rating_count DESC
             LIMIT ?
           `, [...favIds, ...favIds, limit]);
