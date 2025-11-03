@@ -616,34 +616,72 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 0.7rem;
 }
 
-/* ML Recommended Books Styling - Different Font */
+/* ML Recommended Books Styling - Different Font & Strong Visual Identity */
 .ml-recommended {
-  border: 2px solid var(--forest);
-  box-shadow: 0 4px 20px rgba(42, 157, 143, 0.3);
+  border: 3px solid var(--forest);
+  box-shadow: 0 4px 20px rgba(42, 157, 143, 0.4), 0 0 0 1px var(--forest-light);
+  background: linear-gradient(135deg, rgba(42, 157, 143, 0.03) 0%, rgba(42, 157, 143, 0.08) 100%);
+  position: relative;
+}
+
+.ml-recommended::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  background: linear-gradient(135deg, var(--forest-light), var(--forest-dark));
+  border-radius: 12px;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .ml-recommended:hover {
   border-color: var(--forest-dark);
-  box-shadow: 0 8px 30px rgba(42, 157, 143, 0.4);
+  box-shadow: 0 8px 30px rgba(42, 157, 143, 0.5), 0 0 20px rgba(42, 157, 143, 0.2);
+  transform: translateY(-5px);
+}
+
+.ml-recommended:hover::before {
+  opacity: 0.15;
 }
 
 .ml-recommended-title {
   font-family: 'Crimson Text', Georgia, serif !important;
-  font-weight: 600 !important;
+  font-weight: 700 !important;
   font-style: italic;
+  font-size: 1.2rem !important;
   color: var(--forest-dark) !important;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(42, 157, 143, 0.1);
 }
 
 .ml-recommended-author {
   font-family: 'Crimson Text', Georgia, serif !important;
-  font-weight: 500;
+  font-weight: 600;
   font-style: italic;
+  font-size: 1rem !important;
   color: var(--forest) !important;
+  letter-spacing: 0.3px;
 }
 
 .ml-badge {
   background: linear-gradient(135deg, var(--forest) 0%, var(--forest-dark) 100%);
+  font-weight: 700;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  animation: pulse-ml 2s ease-in-out infinite;
+}
+
+@keyframes pulse-ml {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(42, 157, 143, 0.3);
+  }
+  50% {
+    box-shadow: 0 2px 15px rgba(42, 157, 143, 0.6);
+  }
 }
 
 /* Sections */
