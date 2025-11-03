@@ -1,19 +1,16 @@
 -- Fix: Assign genres to Pride and Prejudice (Book ID 44)
--- Pride and Prejudice should have: Romance, Classic Literature
+-- Assign genres: Romance (ID 2), Classic (ID 12), Literary Fiction (ID 8), Historical Fiction (ID 6)
 
 -- First, check what genres exist
 SELECT * FROM book_genres;
 
--- Assign appropriate genres to Pride and Prejudice
--- Assuming genre IDs (adjust based on your book_genres table):
--- 1 = Fiction
--- 6 = Classic
--- 8 = Romance (if exists)
-
 -- Add genres to Pride and Prejudice
-INSERT INTO book_genre_relations (book_id, genre_id) VALUES
-(44, 1),  -- Fiction
-(44, 6);  -- Classic
+-- Using INSERT IGNORE for idempotency (safe to re-run)
+INSERT IGNORE INTO book_genre_relations (book_id, genre_id) VALUES
+(44, 2),   -- Romance
+(44, 12),  -- Classic
+(44, 8),   -- Literary Fiction
+(44, 6);   -- Historical Fiction
 
 -- If Romance genre exists (check genre ID first):
 -- INSERT INTO book_genre_relations (book_id, genre_id) VALUES (44, 8);
