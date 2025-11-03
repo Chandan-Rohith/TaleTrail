@@ -1,0 +1,31 @@
+/* 
+ * Leaflet CSS Overrides
+ * Fixes for legacy CSS properties in Leaflet 1.9.4
+ * These overrides suppress console warnings for outdated CSS
+ */
+
+/* Fix for image-rendering warning */
+.leaflet-image-layer {
+  image-rendering: auto !important;
+  image-rendering: -webkit-optimize-contrast !important;
+}
+
+/* Fix for IE-specific filter warnings */
+.leaflet-fade-anim .leaflet-tile {
+  filter: none !important;
+}
+
+.leaflet-zoom-anim .leaflet-zoom-animated {
+  filter: none !important;
+}
+
+/* Leaflet container base fixes */
+.leaflet-container {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Remove deprecated properties that cause warnings */
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+  text-indent: 0 !important;
+}

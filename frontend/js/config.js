@@ -1,11 +1,9 @@
 // Configuration for TaleTrail Frontend
 const CONFIG = {
     // API URLs
-    // API URLs
-    // Use the Render-deployed backend for production/staging.
-    // Local developers can switch this to http://localhost:5000/api when running backend locally.
-    API_BASE_URL: 'https://taletrail-backend-z2xb.onrender.com/api',
-    ML_API_URL: 'http://localhost:5001', // Will be updated when ML service is deployed
+    // For local development
+    API_BASE_URL: 'http://localhost:3000/api',
+    ML_API_URL: 'http://localhost:5000', // ML service runs on port 5000
     
     // Map configuration
     MAP_CENTER: [20, 0],

@@ -5,22 +5,22 @@
 -- Country ID for United Kingdom is 2 (GB)
 INSERT INTO books (title, author, description, publication_year, isbn, cover_image_url, average_rating, rating_count, country_id) VALUES
 ('Pride and Prejudice', 'Jane Austen', 'A witty and romantic tale of Elizabeth Bennet and Mr. Darcy, exploring themes of love, class, and social expectations in Regency England.', 1813, '9780141439518', 'images/covers/pride_prejudice.jpg', 4.6, 2500000, 2),
-('Lord of the Rings', 'J.R.R. Tolkien', 'An epic fantasy adventure following Frodo Baggins as he journeys to destroy the One Ring and save Middle-earth from the Dark Lord Sauron.', 1954, '9780547928227', 'images/covers/lord_rings.jpg', 4.7, 1800000),
-('Sherlock Holmes', 'Arthur Conan Doyle', 'The complete adventures of the world\'s greatest detective and his loyal companion Dr. Watson solving mysteries in Victorian London.', 1887, '9780553212419', 'images/covers/sherlock_holmes.jpg', 4.5, 1200000),
-('Jane Eyre', 'Charlotte Brontë', 'The story of an orphaned girl who becomes a governess and falls in love with her mysterious employer, Mr. Rochester.', 1847, '9780141441146', 'images/covers/jane_eyre.jpg', 4.4, 950000),
-('Animal Farm', 'George Orwell', 'A satirical allegory about farm animals who rebel against their human farmer, hoping to create a society where animals can be equal, free, and happy.', 1945, '9780451526342', 'images/covers/animal_farm.jpg', 4.3, 1100000),
-('Wuthering Heights', 'Emily Brontë', 'A passionate tale of love and revenge set on the Yorkshire moors, following the turbulent relationship between Heathcliff and Catherine.', 1847, '9780141439556', 'images/covers/wuthering_heights.jpg', 4.2, 800000),
-('The Chronicles of Narnia', 'C.S. Lewis', 'A magical series beginning with four children who discover a wardrobe that leads to the enchanted land of Narnia.', 1950, '9780060764890', 'images/covers/chronicles_narnia.jpg', 4.5, 1300000);
+('Lord of the Rings', 'J.R.R. Tolkien', 'An epic fantasy adventure following Frodo Baggins as he journeys to destroy the One Ring and save Middle-earth from the Dark Lord Sauron.', 1954, '9780547928227', 'images/covers/lord_rings.jpg', 4.7, 1800000, 2),
+('Sherlock Holmes', 'Arthur Conan Doyle', 'The complete adventures of the world\'s greatest detective and his loyal companion Dr. Watson solving mysteries in Victorian London.', 1887, '9780553212419', 'images/covers/sherlock_holmes.jpg', 4.5, 1200000, 2),
+('Jane Eyre', 'Charlotte Brontë', 'The story of an orphaned girl who becomes a governess and falls in love with her mysterious employer, Mr. Rochester.', 1847, '9780141441146', 'images/covers/jane_eyre.jpg', 4.4, 950000, 2),
+('Animal Farm', 'George Orwell', 'A satirical allegory about farm animals who rebel against their human farmer, hoping to create a society where animals can be equal, free, and happy.', 1945, '9780451526342', 'images/covers/animal_farm.jpg', 4.3, 1100000, 2),
+('Wuthering Heights', 'Emily Brontë', 'A passionate tale of love and revenge set on the Yorkshire moors, following the turbulent relationship between Heathcliff and Catherine.', 1847, '9780141439556', 'images/covers/wuthering_heights.jpg', 4.2, 800000, 2),
+('The Chronicles of Narnia', 'C.S. Lewis', 'A magical series beginning with four children who discover a wardrobe that leads to the enchanted land of Narnia.', 1950, '9780060764890', 'images/covers/chronicles_narnia.jpg', 4.5, 1300000, 2);
 
 -- United States (adding 7 more books to reach 10)
 INSERT INTO books (title, author, description, publication_year, isbn, cover_image_url, average_rating, rating_count, country_id) VALUES
-('The Catcher in the Rye', 'J.D. Salinger', 'The story of teenager Holden Caulfield\'s alienation and rebellion as he wanders New York City after being expelled from prep school.', 1951, '9780316769174', 'images/covers/catcher_rye.jpg', 4.1, 1500000),
-('Gone with the Wind', 'Margaret Mitchell', 'An epic historical romance set during the American Civil War and Reconstruction era, following the strong-willed Scarlett O\'Hara.', 1936, '9781451635621', 'images/covers/gone_wind.jpg', 4.3, 1200000),
-('The Adventures of Huckleberry Finn', 'Mark Twain', 'The adventures of a young boy and an escaped slave as they travel down the Mississippi River on a raft.', 1884, '9780486280615', 'images/covers/huck_finn.jpg', 4.2, 900000),
-('Of Mice and Men', 'John Steinbeck', 'A tragic tale of friendship between two displaced migrant ranch workers during the Great Depression in California.', 1937, '9780140177398', 'images/covers/mice_men.jpg', 4.0, 1100000),
-('The Grapes of Wrath', 'John Steinbeck', 'The story of the Joad family\'s journey from Oklahoma to California during the Great Depression.', 1939, '9780143039433', 'images/covers/grapes_wrath.jpg', 4.4, 850000),
-('Moby Dick', 'Herman Melville', 'The epic tale of Captain Ahab\'s obsessive quest for revenge against the white whale that destroyed his leg.', 1851, '9780142437247', 'images/covers/moby_dick.jpg', 4.1, 700000),
-('The Scarlet Letter', 'Nathaniel Hawthorne', 'Set in Puritan New England, the story follows Hester Prynne as she struggles with the consequences of adultery.', 1850, '9780142437261', 'images/covers/scarlet_letter.jpg', 4.0, 650000);
+('The Catcher in the Rye', 'J.D. Salinger', 'The story of teenager Holden Caulfield\'s alienation and rebellion as he wanders New York City after being expelled from prep school.', 1951, '9780316769174', 'images/covers/catcher_rye.jpg', 4.1, 1500000, 1),
+('Gone with the Wind', 'Margaret Mitchell', 'An epic historical romance set during the American Civil War and Reconstruction era, following the strong-willed Scarlett O\'Hara.', 1936, '9781451635621', 'images/covers/gone_wind.jpg', 4.3, 1200000, 1),
+('The Adventures of Huckleberry Finn', 'Mark Twain', 'The adventures of a young boy and an escaped slave as they travel down the Mississippi River on a raft.', 1884, '9780486266893', 'images/covers/huck_finn.jpg', 4.2, 900000, 1),
+('Of Mice and Men', 'John Steinbeck', 'A tragic tale of friendship between two displaced migrant ranch workers during the Great Depression in California.', 1937, '9780140177398', 'images/covers/mice_men.jpg', 4.0, 1100000, 1),
+('The Grapes of Wrath', 'John Steinbeck', 'The story of the Joad family\'s journey from Oklahoma to California during the Great Depression.', 1939, '9780143039433', 'images/covers/grapes_wrath.jpg', 4.4, 850000, 1),
+('Moby Dick', 'Herman Melville', 'The epic tale of Captain Ahab\'s obsessive quest for revenge against the white whale that destroyed his leg.', 1851, '9780142437247', 'images/covers/moby_dick.jpg', 4.1, 700000, 1),
+('The Scarlet Letter', 'Nathaniel Hawthorne', 'Set in Puritan New England, the story follows Hester Prynne as she struggles with the consequences of adultery.', 1850, '9780142437261', 'images/covers/scarlet_letter.jpg', 4.0, 650000, 1);
 
 -- France (adding 8 more books to reach 10)
 INSERT INTO books (title, author, description, publication_year, isbn, cover_image_url, average_rating, rating_count, country_id) VALUES

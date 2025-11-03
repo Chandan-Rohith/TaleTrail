@@ -18,7 +18,7 @@
 DB_HOST=your_mysql_host
 DB_PORT=3306
 DB_USER=your_mysql_user
-DB_PASSWORD=your_mysql_password
+DB_PASSWORD=panduorange
 DB_NAME=taletrail_db
 JWT_SECRET=your_random_secret_key_min_32_chars
 NODE_ENV=production

@@ -579,9 +579,71 @@ h1, h2, h3, h4, h5, h6 {
   margin-top: 0.8rem;
   display: -webkit-box;
   -webkit-line-clamp: 3;
-  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Recommended Books Styling */
+.recommended-book {
+  border: 2px solid var(--golden);
+  box-shadow: 0 4px 20px rgba(244, 162, 97, 0.3);
+}
+
+.recommended-book:hover {
+  border-color: var(--golden-dark);
+  box-shadow: 0 8px 30px rgba(244, 162, 97, 0.4);
+}
+
+.recommended-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: linear-gradient(135deg, var(--golden) 0%, var(--golden-dark) 100%);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+.recommended-badge i {
+  font-size: 0.7rem;
+}
+
+/* ML Recommended Books Styling - Different Font */
+.ml-recommended {
+  border: 2px solid var(--forest);
+  box-shadow: 0 4px 20px rgba(42, 157, 143, 0.3);
+}
+
+.ml-recommended:hover {
+  border-color: var(--forest-dark);
+  box-shadow: 0 8px 30px rgba(42, 157, 143, 0.4);
+}
+
+.ml-recommended-title {
+  font-family: 'Crimson Text', Georgia, serif !important;
+  font-weight: 600 !important;
+  font-style: italic;
+  color: var(--forest-dark) !important;
+  letter-spacing: 0.3px;
+}
+
+.ml-recommended-author {
+  font-family: 'Crimson Text', Georgia, serif !important;
+  font-weight: 500;
+  font-style: italic;
+  color: var(--forest) !important;
+}
+
+.ml-badge {
+  background: linear-gradient(135deg, var(--forest) 0%, var(--forest-dark) 100%);
 }
 
 /* Sections */

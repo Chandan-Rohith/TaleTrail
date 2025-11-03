@@ -6,6 +6,16 @@ const router = express.Router();
 
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5001';
 
+// Helper function to check if ML service is available
+async function checkMLService() {
+  try {
+    await axios.get(`${ML_SERVICE_URL}/health`, { timeout: 2000 });
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 // Get personalized recommendations for a user
 router.get('/user/:userId', authenticateToken, async (req, res) => {
   try {
@@ -26,9 +36,13 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
 
     // PRIORITY 1: Try ML Service for personalized recommendations
     try {
-      console.log(`Attempting ML recommendations for user ${userId}`);
+      console.log(`🤖 Attempting ML recommendations for user ${userId}`);
       const mlResponse = await axios.get(`${ML_SERVICE_URL}/recommendations/user/${userId}`, {
-        params: { limit },
+        params: { 
+          limit,
+          content_weight: 0.6,
+          collab_weight: 0.4
+        },
         timeout: 5000
       });
 
@@ -178,13 +192,17 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
 router.get('/similar/:bookId', async (req, res) => {
   try {
     const { bookId } = req.params;
-    const limit = req.query.limit || 5;
+    const limit = parseInt(req.query.limit) || 5;
+
+    console.log(`🔍 Getting similar books for book ${bookId}`);
 
     // Call Python ML service
     const response = await axios.get(`${ML_SERVICE_URL}/recommendations/similar/${bookId}`, {
-      params: { limit }
+      params: { limit },
+      timeout: 5000
     });
 
+    console.log(`✅ ML Service returned ${response.data.similar_books?.length || 0} similar books`);
     res.json(response.data);
   } catch (error) {
     console.error('Error getting similar books:', error.message);
@@ -227,14 +245,18 @@ router.get('/similar/:bookId', async (req, res) => {
 // Get trending books
 router.get('/trending', async (req, res) => {
   try {
-    const limit = req.query.limit || 10;
-    const days = req.query.days || 7;
+    const limit = parseInt(req.query.limit) || 10;
+    const days = parseInt(req.query.days) || 7;
+
+    console.log(`📈 Getting trending books (${days} days, limit ${limit})`);
 
     // Call Python ML service
     const response = await axios.get(`${ML_SERVICE_URL}/recommendations/trending`, {
-      params: { limit, days }
+      params: { limit, days },
+      timeout: 5000
     });
 
+    console.log(`✅ ML Service returned ${response.data.trending_books?.length || 0} trending books`);
     res.json(response.data);
   } catch (error) {
     console.error('Error getting trending books:', error.message);
@@ -267,14 +289,85 @@ router.get('/trending', async (req, res) => {
   }
 });
 
+// Get genre-based recommendations from ML service (NEW)
+router.get('/genre/:genre', async (req, res) => {
+  try {
+    const { genre } = req.params;
+    const limit = parseInt(req.query.limit) || 10;
+
+    console.log(`🎭 Getting recommendations for genre: ${genre}`);
+
+    // Call Python ML service
+    const response = await axios.get(`${ML_SERVICE_URL}/recommendations/genre/${genre}`, {
+      params: { limit },
+      timeout: 5000
+    });
+
+    console.log(`✅ ML Service returned ${response.data.top_books?.length || 0} books for genre ${genre}`);
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error getting genre recommendations:', error.message);
+    
+    // Fallback to database query
+    try {
+      const [books] = await db.execute(`
+        SELECT b.*, c.name as country_name
+        FROM books b
+        LEFT JOIN countries c ON b.country_id = c.id
+        LEFT JOIN book_genres bg ON b.id = bg.book_id
+        WHERE bg.genre_name LIKE ?
+        ORDER BY b.average_rating DESC
+        LIMIT ?
+      `, [`%${req.params.genre}%`, limit]);
+
+      res.json({
+        genre: req.params.genre,
+        top_books: books.map(book => ({
+          book_id: book.id,
+          title: book.title,
+          author: book.author,
+          rating: book.average_rating
+        })),
+        total: books.length,
+        fallback: true
+      });
+    } catch (dbError) {
+      res.status(500).json({ error: 'Failed to get genre recommendations' });
+    }
+  }
+});
+
 // Trigger model retraining
 router.post('/train', authenticateToken, async (req, res) => {
   try {
-    const response = await axios.post(`${ML_SERVICE_URL}/train`);
+    console.log('🔄 Triggering ML model retraining...');
+    const response = await axios.post(`${ML_SERVICE_URL}/train`, {}, {
+      timeout: 30000 // 30 seconds for training
+    });
+    console.log('✅ Models retrained successfully');
     res.json(response.data);
   } catch (error) {
-    console.error('Error training models:', error.message);
-    res.status(500).json({ error: 'Failed to train models' });
+    console.error('❌ Error training models:', error.message);
+    res.status(500).json({ error: 'Failed to train models', details: error.message });
+  }
+});
+
+// Health check for ML service
+router.get('/ml-status', async (req, res) => {
+  try {
+    const isAvailable = await checkMLService();
+    res.json({ 
+      ml_service: isAvailable ? 'online' : 'offline',
+      url: ML_SERVICE_URL,
+      status: isAvailable ? 200 : 503
+    });
+  } catch (error) {
+    res.json({ 
+      ml_service: 'offline',
+      url: ML_SERVICE_URL,
+      status: 503,
+      error: error.message
+    });
   }
 });
 

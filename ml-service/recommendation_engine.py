@@ -129,7 +129,7 @@ class RecommendationEngine:
         except Exception as e:
             logger.warning(f"Could not train collaborative model: {str(e)}")
     
-    def get_user_recommendations(self, user_id, limit=10):
+    def get_user_recommendations(self, user_id, limit=10, content_weight=0.6, collab_weight=0.4):
         """Get personalized recommendations for a user"""
         try:
             # Get user's rating history
@@ -147,25 +147,43 @@ class RecommendationEngine:
             if self.collaborative_model is not None and user_id in self.user_book_matrix.index:
                 collab_recs = self.get_collaborative_recommendations(user_id, limit * 2)
             
-            # Combine and deduplicate recommendations
-            all_recs = content_recs + collab_recs
-            seen_books = set()
+            # Combine recommendations with weighting
+            combined_recs = {}
+
+            for rec in content_recs:
+                book_id = rec['book_id']
+                if book_id not in combined_recs:
+                    combined_recs[book_id] = rec
+                    combined_recs[book_id]['final_score'] = 0
+                combined_recs[book_id]['final_score'] += rec.get('similarity_score', 0) * content_weight
+
+            for rec in collab_recs:
+                book_id = rec['book_id']
+                if book_id not in combined_recs:
+                    combined_recs[book_id] = rec
+                    combined_recs[book_id]['final_score'] = 0
+                combined_recs[book_id]['final_score'] += rec.get('predicted_rating', 0) * collab_weight
+
+            # Sort by the combined score
+            sorted_recs = sorted(combined_recs.values(), key=lambda x: x['final_score'], reverse=True)
+
+            # Deduplicate and limit
+            seen_books = set(rating['book_id'] for _, rating in user_ratings.iterrows())
             final_recs = []
-            
-            for rec in all_recs:
+            for rec in sorted_recs:
                 if rec['book_id'] not in seen_books and len(final_recs) < limit:
-                    seen_books.add(rec['book_id'])
                     final_recs.append(rec)
+                    seen_books.add(rec['book_id'])
             
-            # Fill with trending if needed
+            # Fill with trending if not enough recommendations
             if len(final_recs) < limit:
-                trending = self.get_trending_books(limit - len(final_recs))
+                trending = self.get_trending_books(limit)
                 for book in trending:
+                    if len(final_recs) >= limit:
+                        break
                     if book['book_id'] not in seen_books:
                         final_recs.append(book)
-                        if len(final_recs) >= limit:
-                            break
-            
+
             return final_recs[:limit]
             
         except Exception as e:
@@ -351,6 +369,30 @@ class RecommendationEngine:
             logger.error(f"Error getting trending books: {str(e)}")
             return []
     
+    def get_recommendations_by_genre(self, genre, limit=10):
+        """Get top-rated books from a specific genre"""
+        try:
+            genre_books = self.books_df[
+                self.books_df['genre'].str.contains(genre, case=False, na=False)
+            ].sort_values('average_rating', ascending=False).head(limit)
+            
+            top_books = []
+            for _, book in genre_books.iterrows():
+                top_books.append({
+                    'book_id': int(book['id']),
+                    'title': book['title'],
+                    'author': book['author'],
+                    'genre': book['genre'],
+                    'rating': float(book['average_rating']) if book['average_rating'] else 0.0,
+                    'description': book['description']
+                })
+            
+            return top_books
+            
+        except Exception as e:
+            logger.error(f"Error getting genre books: {str(e)}")
+            return []
+
     def get_country_top_books(self, country_code, limit=10):
         """Get top-rated books from a specific country"""
         try:

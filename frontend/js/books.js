@@ -82,7 +82,7 @@ async function toggleFavorite(bookId, button) {
 }
 
 // Create Book Card HTML
-function createBookCard(book) {
+function createBookCard(book, isRecommended = false, isMLRecommendation = false) {
     // Ensure we have valid book data
     if (!book || !book.title) {
         console.warn('Invalid book data:', book);
@@ -94,8 +94,14 @@ function createBookCard(book) {
     const bookId = book.book_id || book.id;
     const isFavorited = userFavorites.has(bookId);
     
+    // Determine classes based on recommendation type
+    const cardClass = isMLRecommendation ? 'recommended-book ml-recommended' : (isRecommended ? 'recommended-book' : '');
+    const titleClass = isMLRecommendation ? 'ml-recommended-title' : (isRecommended ? 'recommended-title' : '');
+    const authorClass = isMLRecommendation ? 'ml-recommended-author' : (isRecommended ? 'recommended-author' : '');
+    const badgeText = isMLRecommendation ? '<i class="fas fa-brain"></i> ML Recommended' : '<i class="fas fa-star"></i> Recommended';
+    
     return `
-        <div class="book-card" onclick="openBookModal(${bookId})" style="position: relative;">
+        <div class="book-card ${cardClass}" onclick="openBookModal(${bookId})" style="position: relative;">
             <div class="book-cover-container">
                 <img src="${coverUrl}" alt="${book.title}" class="book-cover" 
                      onerror="handleImageError(this, '${book.title.charAt(0).toUpperCase()}');"
@@ -108,17 +114,18 @@ function createBookCard(book) {
                     </div>
                     <span>${rating}</span>
                 </div>
+                ${(isRecommended || isMLRecommendation) ? `<div class="recommended-badge ${isMLRecommendation ? 'ml-badge' : ''}">${badgeText}</div>` : ''}
             </div>
             <div class="book-info">
                 <div class="book-title-row">
-                    <h3 class="book-title">${book.title || 'Unknown Title'}</h3>
+                    <h3 class="book-title ${titleClass}">${book.title || 'Unknown Title'}</h3>
                     <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" 
                             onclick="event.stopPropagation(); toggleFavorite(${bookId}, this)"
                             title="${isFavorited ? 'Remove from favorites' : 'Add to favorites'}">
                         <i class="${isFavorited ? 'fas' : 'far'} fa-heart"></i>
                     </button>
                 </div>
-                <p class="book-author">by ${book.author || 'Unknown Author'}</p>
+                <p class="book-author ${authorClass}">by ${book.author || 'Unknown Author'}</p>
                 <p class="book-country">
                     <i class="fas fa-globe"></i>
                     ${book.country || book.country_name || 'Unknown'}
@@ -310,6 +317,7 @@ function displayBookReviews(reviews) {
 }
 
 // Load Trending Books
+let trendingBooksLoading = false;
 async function loadTrendingBooks() {
     const container = document.getElementById('trending-books');
     
@@ -317,6 +325,14 @@ async function loadTrendingBooks() {
         // Silently return if container not found (e.g., on profile page)
         return;
     }
+    
+    // Prevent multiple simultaneous calls
+    if (trendingBooksLoading) {
+        console.log('⏳ Trending books already loading, skipping...');
+        return;
+    }
+    
+    trendingBooksLoading = true;
     
     // Wait for favorites to load if user is authenticated
     if (authManager.isAuthenticated() && !favoritesLoaded) {
@@ -327,9 +343,23 @@ async function loadTrendingBooks() {
         showLoading('trending-books', 'Loading trending books...');
         
         const response = await apiService.getTrendingBooks(CONFIG.TRENDING_LIMIT);
+        console.log('📊 Trending books response:', response);
         
         if (response && response.length > 0) {
-            container.innerHTML = response.map(book => createBookCard(book)).join('');
+            // Remove duplicates by book ID - check both id and book_id fields
+            const uniqueBooks = [];
+            const seenIds = new Set();
+            
+            response.forEach(book => {
+                const bookId = book.id || book.book_id;
+                if (bookId && !seenIds.has(bookId)) {
+                    seenIds.add(bookId);
+                    uniqueBooks.push(book);
+                }
+            });
+            
+            console.log('✅ Received:', response.length, 'books | After deduplication:', uniqueBooks.length, 'unique books');
+            container.innerHTML = uniqueBooks.map(book => createBookCard(book)).join('');
         } else {
             container.innerHTML = `
                 <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
@@ -349,10 +379,12 @@ async function loadTrendingBooks() {
                 <p>Please try again later.</p>
             </div>
         `;
+    } finally {
+        trendingBooksLoading = false;
     }
 }
 
-// Load Popular Books (formerly recommendations)
+// Load Popular Books or ML Recommendations
 async function loadRecommendations() {
     const container = document.getElementById('recommended-books');
     
@@ -366,34 +398,65 @@ async function loadRecommendations() {
         await loadUserFavorites();
     }
     
-    // Simply load popular books (highest rated)
     try {
-        showLoading('recommended-books', 'Loading popular books...');
+        let response;
+        let isMLRecommendation = false;
         
-        const response = await apiService.getBooks({ 
-            sort: 'rating', 
-            order: 'desc', 
-            limit: CONFIG.RECOMMENDATIONS_LIMIT 
-        });
+        // Try to get ML-based recommendations if user is authenticated
+        if (authManager.isAuthenticated() && authManager.user && authManager.user.id) {
+            showLoading('recommended-books', 'Loading personalized recommendations...');
+            try {
+                const mlResponse = await apiService.getUserRecommendations(
+                    authManager.user.id, 
+                    CONFIG.RECOMMENDATIONS_LIMIT
+                );
+                
+                // Backend returns 'recommendations' array, normalize to 'books'
+                if (mlResponse.recommendations && mlResponse.recommendations.length > 0) {
+                    response = { books: mlResponse.recommendations };
+                    isMLRecommendation = true;
+                    console.log('✅ Loaded ML-based recommendations:', mlResponse.recommendations.length, 'books');
+                } else {
+                    console.log('⚠️ ML service returned empty recommendations');
+                }
+            } catch (mlError) {
+                console.log('❌ ML recommendations not available, falling back to popular books:', mlError);
+                isMLRecommendation = false;
+            }
+        }
+        
+        // Fallback to popular books if ML recommendations failed or user not authenticated
+        if (!response || !response.books || response.books.length === 0) {
+            showLoading('recommended-books', 'Loading popular books...');
+            response = await apiService.getBooks({ 
+                sort: 'rating', 
+                order: 'desc', 
+                limit: CONFIG.RECOMMENDATIONS_LIMIT 
+            });
+            isMLRecommendation = false;
+            console.log('📚 Showing popular books as fallback');
+        }
         
         if (response.books && response.books.length > 0) {
-            container.innerHTML = response.books.map(book => createBookCard(book)).join('');
+            // Pass isMLRecommendation flag to createBookCard
+            container.innerHTML = response.books.map(book => createBookCard(book, true, isMLRecommendation)).join('');
+            console.log(`✅ Displayed ${response.books.length} books (ML: ${isMLRecommendation})`);
         } else {
             container.innerHTML = `
                 <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
                     <i class="fas fa-book" style="font-size: 3rem; color: var(--golden); margin-bottom: 1rem;"></i>
                     <h3>No books available</h3>
-                    <p>Check back later for popular books!</p>
+                    <p>Check back later for recommendations!</p>
                 </div>
             `;
         }
         
     } catch (error) {
-        console.error('Error loading popular books:', error);
+        console.error('Error loading recommendations:', error);
         container.innerHTML = `
             <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
                 <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #dc2626; margin-bottom: 1rem;"></i>
-                <h3>Failed to load popular books</h3>
+                <h3>Failed to load recommendations</h3>
                 <p>Please try again later.</p>
             </div>
         `;

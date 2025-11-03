@@ -33,8 +33,12 @@ def get_user_recommendations(user_id):
     """Get personalized recommendations for a user"""
     try:
         limit = request.args.get('limit', 10, type=int)
-        
-        recommendations = rec_engine.get_user_recommendations(user_id, limit)
+        content_weight = request.args.get('content_weight', 0.6, type=float)
+        collab_weight = request.args.get('collab_weight', 0.4, type=float)
+
+        recommendations = rec_engine.get_user_recommendations(
+            user_id, limit, content_weight, collab_weight
+        )
         
         return jsonify({
             'user_id': user_id,
@@ -79,6 +83,23 @@ def get_trending_books():
     except Exception as e:
         logger.error(f"Error getting trending books: {str(e)}")
         return jsonify({'error': 'Failed to get trending books'}), 500
+
+@app.route('/recommendations/genre/<genre>', methods=['GET'])
+def get_genre_recommendations(genre):
+    """Get top books from a specific genre"""
+    try:
+        limit = request.args.get('limit', 10, type=int)
+        
+        books = rec_engine.get_recommendations_by_genre(genre, limit)
+        
+        return jsonify({
+            'genre': genre,
+            'top_books': books,
+            'total': len(books)
+        })
+    except Exception as e:
+        logger.error(f"Error getting books for genre {genre}: {str(e)}")
+        return jsonify({'error': 'Failed to get genre books'}), 500
 
 @app.route('/recommendations/country/<country_code>', methods=['GET'])
 def get_country_recommendations(country_code):

@@ -133,27 +133,30 @@ router.get('/trending', async (req, res) => {
     
     console.log('Fetching trending books with limit:', limitNum);
     
-    // Use query instead of execute to avoid prepared statement issues
+    // Use GROUP BY to ensure only one book per title+author combination
+    // This fixes duplicate books in the database
     const [books] = await db.query(`
       SELECT 
-        b.id,
+        MIN(b.id) as id,
         b.title,
         b.author,
-        b.cover_image_url,
-        b.average_rating,
-        b.rating_count,
-        c.name as country_name,
-        c.code as country_code
+        MAX(b.description) as description,
+        MAX(b.cover_image_url) as cover_image_url,
+        MAX(b.average_rating) as average_rating,
+        MAX(b.rating_count) as rating_count,
+        MAX(c.name) as country_name,
+        MAX(c.code) as country_code
       FROM books b
       LEFT JOIN countries c ON b.country_id = c.id
       WHERE b.rating_count > 0
+      GROUP BY b.title, b.author
       ORDER BY 
-        (b.average_rating * b.rating_count) DESC,
-        b.rating_count DESC
+        (MAX(b.average_rating) * MAX(b.rating_count)) DESC,
+        MAX(b.rating_count) DESC
       LIMIT ${limitNum}
     `);
 
-    console.log('Found books:', books.length);
+    console.log('Found trending books (deduplicated):', books.length);
     res.json(books);
   } catch (error) {
     console.error('Error fetching trending books:', error);

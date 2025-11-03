@@ -12,17 +12,17 @@ const userRoutes = require('./routes/user');
 const favoritesRoutes = require('./routes/favorites');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 // Security middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// Rate limiting
+// Rate limiting - More lenient for development
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 1000 // limit each IP to 1000 requests per minute (very lenient for dev)
 });
 app.use(limiter);
 
