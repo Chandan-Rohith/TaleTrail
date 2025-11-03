@@ -6,6 +6,8 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const jwt = require('jsonwebtoken');
+const { authenticateToken } = require('../middleware/auth');
 
 router.post('/fix-book-genres', async (req, res) => {
     try {
@@ -116,17 +118,61 @@ router.post('/assign-all-genres', async (req, res) => {
     }
 });
 
-// Debug endpoint to check if a token belongs to which user
-router.post('/debug-token', async (req, res) => {
+/**
+ * DEBUG ENDPOINT - SECURITY WARNING
+ * This endpoint exposes sensitive user information and should ONLY be enabled
+ * in development environments with proper authentication.
+ * 
+ * PRODUCTION SAFEGUARDS:
+ * - Requires DEBUG_ADMIN_ENDPOINT=true environment variable
+ * - Requires authentication via authenticateToken middleware
+ * - Requires admin role (if role system is implemented)
+ * - Logs all access attempts for audit trail
+ * - Redacts sensitive PII in responses
+ */
+router.post('/debug-token', authenticateToken, async (req, res) => {
     try {
+        // Production safety check - disable in production unless explicitly enabled
+        if (process.env.NODE_ENV === 'production' && process.env.DEBUG_ADMIN_ENDPOINT !== 'true') {
+            console.warn('⚠️ Blocked debug-token access attempt in production', {
+                requesterId: req.user?.id,
+                timestamp: new Date().toISOString()
+            });
+            return res.status(403).json({ error: 'This endpoint is disabled in production' });
+        }
+        
+        // Authorization check - verify admin access
+        // Note: Update this check when role system is implemented
+        if (req.user && req.user.role !== 'admin') {
+            console.warn('⚠️ Unauthorized debug-token access attempt', {
+                requesterId: req.user.id,
+                timestamp: new Date().toISOString()
+            });
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+        
         const { token } = req.body;
         
         if (!token) {
             return res.status(400).json({ error: 'Token required' });
         }
         
-        const jwt = require('jsonwebtoken');
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key-change-in-production');
+        // Validate JWT_SECRET is configured
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret) {
+            console.error('❌ JWT_SECRET not configured');
+            return res.status(500).json({ error: 'Server configuration error' });
+        }
+        
+        const decoded = jwt.verify(token, jwtSecret);
+        
+        // Audit log - record all debug token inspections
+        console.log('🔍 Admin debug-token inspection', {
+            adminId: req.user?.id,
+            investigatedUserId: decoded.userId,
+            timestamp: new Date().toISOString(),
+            ip: req.ip
+        });
         
         // Get user info
         const [users] = await db.execute(
@@ -148,15 +194,30 @@ router.post('/debug-token', async (req, res) => {
             [decoded.userId]
         );
         
+        // Return response with PII redacted unless in development
+        const user = users[0];
         res.json({
             decoded,
             userExists: true,
-            user: users[0],
+            user: {
+                id: user.id,
+                username: user.username,
+                email: process.env.NODE_ENV === 'development' ? user.email : '[REDACTED]'
+            },
             favoritesCount: favs[0].count
         });
         
     } catch (error) {
-        res.status(400).json({ error: 'Invalid token', details: error.message });
+        // Log full error server-side for debugging
+        console.error('❌ Debug-token error:', {
+            error: error.message,
+            stack: error.stack,
+            adminId: req.user?.id,
+            timestamp: new Date().toISOString()
+        });
+        
+        // Return sanitized error to client
+        res.status(400).json({ error: 'Invalid token' });
     }
 });
 
