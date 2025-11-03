@@ -247,6 +247,10 @@ function openAuthModal(mode = 'login') {
     modal.style.display = 'flex';
 }
 
+function showAuthModal(type = 'login') {
+    openAuthModal(type);
+}
+
 function closeAuthModal() {
     document.getElementById('auth-modal').style.display = 'none';
     // Reset forms

@@ -456,7 +456,7 @@ async function loadRecommendations() {
                     <i class="fas fa-heart" style="font-size: 3rem; color: var(--burgundy); margin-bottom: 1rem;"></i>
                     <h3>No Recommendations Yet</h3>
                     <p style="margin-bottom: 1.5rem;">Add some books to your favorites to get personalized AI recommendations!</p>
-                    <button onclick="window.location.href='app.html'" class="cta-button" style="font-size: 1rem; padding: 0.75rem 1.5rem;">
+                    <button onclick="window.location.href='main.html'" class="cta-button" style="font-size: 1rem; padding: 0.75rem 1.5rem;">
                         <i class="fas fa-book"></i> Browse Books
                     </button>
                 </div>
