@@ -79,6 +79,7 @@ app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
