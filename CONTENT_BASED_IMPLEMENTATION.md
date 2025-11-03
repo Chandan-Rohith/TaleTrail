@@ -27,6 +27,8 @@ We implemented a **textbook content-based recommendation system** using:
 | **Country** | One-Hot | 0.4x | ~50-80 | Match regional literature |
 | **Rating** | Normalized | 0.3x | 2 | Prefer highly-rated books |
 
+### Total Features
+
 **Total: ~500-600 features per book**
 
 ### Why Genre Gets 3x Weight?
@@ -51,7 +53,7 @@ $$\text{similarity}(A, B) = \frac{A \cdot B}{||A|| \times ||B||}$$
 ### Example: User likes "Harry Potter"
 
 1. **Extract features**:
-   ```
+   ```text
    Genres: [Fantasy: 3, Adventure: 3, Magic: 3]  ← 3x weight!
    Text: [magic: 0.5, wizard: 0.4, school: 0.3, ...]
    Author: [JK_Rowling: 1, others: 0]
@@ -60,7 +62,7 @@ $$\text{similarity}(A, B) = \frac{A \cdot B}{||A|| \times ||B||}$$
    ```
 
 2. **Calculate similarity with all books**:
-   ```
+   ```text
    Percy Jackson:   0.87 (Fantasy, Adventure - genre match!)
    Narnia:          0.82 (Fantasy - genre match!)
    Hunger Games:    0.45 (Adventure but not Fantasy)
@@ -90,18 +92,21 @@ Books similar to **multiple favorites** get highest scores!
 
 ## 📁 Files Created
 
-### 1. `content_based_recommender.py` (350+ lines)
-**Main recommendation engine**
+### 1. content_based_recommender.py (350+ lines)
 
-Key methods:
+Main recommendation engine
+
+#### Key methods
+
 - `load_data()` - Loads books with genres from database
 - `build_feature_vectors()` - Creates feature matrix with proper weights
 - `get_similar_books(book_id, top_k)` - Find similar books using cosine similarity
 - `get_recommendations_for_user(user_id, top_k)` - Personalized recommendations
 - `explain_similarity(book1, book2)` - Show why books are similar
 
-### 2. `app.py` (Updated)
-**Flask API endpoints**
+### 2. app.py (Updated)
+
+Flask API endpoints
 
 ```python
 GET /recommendations/user/{user_id}?limit=10
@@ -114,26 +119,30 @@ GET /recommendations/explain/{book_id1}/{book_id2}
 # Explains why two books are similar
 ```
 
-### 3. `backend/routes/recommendations.js` (Enhanced)
-**Backend integration with improved fallback**
+### 3. backend/routes/recommendations.js (Enhanced)
 
-Now includes **genre-based SQL fallback** when ML service unavailable:
+Backend integration with improved fallback
+
+Now includes genre-based SQL fallback when ML service unavailable:
 ```sql
 -- Finds books with matching genres
 SELECT books WHERE genre IN (user_favorite_genres)
 ORDER BY matching_genres DESC, average_rating DESC
 ```
 
-### 4. `CONTENT_BASED_SYSTEM.md`
-**Comprehensive documentation** explaining:
+### 4. CONTENT_BASED_SYSTEM.md
+
+Comprehensive documentation explaining:
+
 - How content-based filtering works
 - Feature engineering details
 - Mathematical formulas
 - Example flows
 - API endpoints
 
-### 5. `test_content_recommender.py`
-**Test script** to verify:
+### 5. test_content_recommender.py
+
+Test script to verify:
 - Feature vector construction
 - Similarity calculations
 - User recommendations
@@ -141,7 +150,7 @@ ORDER BY matching_genres DESC, average_rating DESC
 
 ## 🔄 System Architecture
 
-```
+```text
 ┌─────────────┐
 │   Frontend  │
 │  (Browser)  │
@@ -271,7 +280,7 @@ This will:
    ```
 
 3. **User sees**:
-   ```
+   ```text
    Recommended for you:
    
    1. Percy Jackson (0.87 similarity)
