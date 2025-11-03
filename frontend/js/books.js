@@ -384,7 +384,7 @@ async function loadTrendingBooks() {
     }
 }
 
-// Load Popular Books or ML Recommendations
+// Load ML-Based Recommendations ONLY (No Popular Books Fallback)
 async function loadRecommendations() {
     const container = document.getElementById('recommended-books');
     const titleElement = document.getElementById('recommendations-title');
@@ -401,85 +401,93 @@ async function loadRecommendations() {
     }
     
     try {
-        let response;
-        let isMLRecommendation = false;
-        
-        // Try to get ML-based recommendations if user is authenticated
-        if (authManager.isAuthenticated() && authManager.user && authManager.user.id) {
-            showLoading('recommended-books', 'Loading personalized recommendations...');
-            try {
-                const mlResponse = await apiService.getUserRecommendations(
-                    authManager.user.id, 
-                    CONFIG.RECOMMENDATIONS_LIMIT
-                );
-                
-                // Backend returns 'recommendations' array, normalize to 'books'
-                if (mlResponse.recommendations && mlResponse.recommendations.length > 0) {
-                    response = { books: mlResponse.recommendations };
-                    isMLRecommendation = true;
-                    
-                    // Update title for ML recommendations
-                    if (titleElement) {
-                        titleElement.textContent = '✨ Recommended For You';
-                    }
-                    if (subtitleElement) {
-                        subtitleElement.textContent = 'Personalized recommendations based on your favorite books';
-                    }
-                    
-                    console.log('✅ Loaded ML-based recommendations:', mlResponse.recommendations.length, 'books');
-                } else {
-                    console.log('⚠️ ML service returned empty recommendations');
-                }
-            } catch (mlError) {
-                console.log('❌ ML recommendations not available, falling back to popular books:', mlError);
-                isMLRecommendation = false;
-            }
-        }
-        
-        // Fallback to popular books if ML recommendations failed or user not authenticated
-        if (!response || !response.books || response.books.length === 0) {
-            showLoading('recommended-books', 'Loading popular books...');
-            response = await apiService.getBooks({ 
-                sort: 'rating', 
-                order: 'desc', 
-                limit: CONFIG.RECOMMENDATIONS_LIMIT 
-            });
-            isMLRecommendation = false;
-            
-            // Update title for popular books fallback
-            if (titleElement) {
-                titleElement.textContent = '📚 Popular Books';
-            }
-            if (subtitleElement) {
-                subtitleElement.textContent = 'Highly-rated books loved by readers worldwide';
-            }
-            
-            console.log('📚 Showing popular books as fallback');
-        }
-        
-        if (response.books && response.books.length > 0) {
-            // Pass isMLRecommendation flag to createBookCard
-            container.innerHTML = response.books.map(book => createBookCard(book, true, isMLRecommendation)).join('');
-            console.log(`✅ Displayed ${response.books.length} books (ML: ${isMLRecommendation})`);
-        } else {
+        // Only show ML recommendations if user is authenticated
+        if (!authManager.isAuthenticated() || !authManager.user || !authManager.user.id) {
+            // User not logged in - show message to login
             container.innerHTML = `
                 <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-                    <i class="fas fa-book" style="font-size: 3rem; color: var(--golden); margin-bottom: 1rem;"></i>
-                    <h3>No books available</h3>
-                    <p>Check back later for recommendations!</p>
+                    <i class="fas fa-brain" style="font-size: 3rem; color: var(--forest); margin-bottom: 1rem;"></i>
+                    <h3>🧠 AI-Powered Recommendations</h3>
+                    <p style="margin-bottom: 1.5rem;">Login to get personalized book recommendations based on your favorites!</p>
+                    <button onclick="showAuthModal()" class="cta-button" style="font-size: 1rem; padding: 0.75rem 1.5rem;">
+                        <i class="fas fa-sign-in-alt"></i> Login to Get Recommendations
+                    </button>
                 </div>
             `;
+            
+            if (titleElement) {
+                titleElement.textContent = '✨ AI-Powered Recommendations';
+            }
+            if (subtitleElement) {
+                subtitleElement.textContent = 'Login to unlock personalized book recommendations';
+            }
+            
+            return;
+        }
+        
+        // User is logged in - fetch ML recommendations
+        showLoading('recommended-books', 'Loading AI recommendations...');
+        
+        const mlResponse = await apiService.getUserRecommendations(
+            authManager.user.id, 
+            CONFIG.RECOMMENDATIONS_LIMIT
+        );
+        
+        // Check if we got recommendations
+        if (mlResponse.recommendations && mlResponse.recommendations.length > 0) {
+            // Update title for ML recommendations
+            if (titleElement) {
+                titleElement.textContent = '✨ AI Recommended For You';
+            }
+            if (subtitleElement) {
+                subtitleElement.textContent = 'Personalized recommendations powered by machine learning';
+            }
+            
+            // Display ML recommendations with special styling
+            container.innerHTML = mlResponse.recommendations.map(book => 
+                createBookCard(book, true, true)  // isRecommended=true, isMLRecommendation=true
+            ).join('');
+            
+            console.log('✅ Loaded ML recommendations:', mlResponse.recommendations.length, 'books');
+        } else {
+            // No recommendations available - user needs to add favorites
+            container.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                    <i class="fas fa-heart" style="font-size: 3rem; color: var(--burgundy); margin-bottom: 1rem;"></i>
+                    <h3>No Recommendations Yet</h3>
+                    <p style="margin-bottom: 1.5rem;">Add some books to your favorites to get personalized AI recommendations!</p>
+                    <button onclick="window.location.href='app.html'" class="cta-button" style="font-size: 1rem; padding: 0.75rem 1.5rem;">
+                        <i class="fas fa-book"></i> Browse Books
+                    </button>
+                </div>
+            `;
+            
+            if (titleElement) {
+                titleElement.textContent = '✨ AI Recommendations';
+            }
+            if (subtitleElement) {
+                subtitleElement.textContent = 'Add favorites to get personalized recommendations';
+            }
+            
+            console.log('⚠️ No ML recommendations - user needs to add favorites');
         }
         
     } catch (error) {
-        console.error('Error loading recommendations:', error);
+        console.error('❌ Error loading ML recommendations:', error);
         container.innerHTML = `
             <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
                 <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #dc2626; margin-bottom: 1rem;"></i>
-                <h3>Failed to load recommendations</h3>
-                <p>Please try again later.</p>
+                <h3>Failed to Load Recommendations</h3>
+                <p>Please try again later or contact support if the issue persists.</p>
             </div>
         `;
+        
+        if (titleElement) {
+            titleElement.textContent = '✨ AI Recommendations';
+        }
+        if (subtitleElement) {
+            subtitleElement.textContent = 'Something went wrong';
+        }
     }
 }
 
