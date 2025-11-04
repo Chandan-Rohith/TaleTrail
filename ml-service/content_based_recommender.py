@@ -27,6 +27,7 @@ class ContentBasedRecommender:
             'user': os.environ.get('DB_USER', 'root'),
             'password': os.environ.get('DB_PASSWORD', ''),
             'database': os.environ.get('DB_NAME', 'taletrail_db'),
+            'port': int(os.environ.get('DB_PORT', '3306')),
             'autocommit': True
         }
         
