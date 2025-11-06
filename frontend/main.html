@@ -28,7 +28,7 @@
                 <a href="index.html" class="nav-link" id="home-link" style="display: none;">Home</a>
                 <a href="#explore" class="nav-link">Explore</a>
                 <a href="#trending" class="nav-link">Trending</a>
-                <a href="#recommendations" class="nav-link">Popular</a>
+                <a href="#recommendations" class="nav-link">All Books</a>
             </div>
             <div class="nav-auth">
                 <div class="user-menu" id="user-menu" style="display: none;">
@@ -69,10 +69,28 @@
 
     <section id="recommendations" class="recommendations-section">
         <div class="container">
-            <h2 class="section-title" id="recommendations-title">✨ Recommended For You</h2>
-            <p class="section-subtitle" id="recommendations-subtitle">Personalized recommendations based on your favorites</p>
+            <h2 class="section-title" id="recommendations-title">📚 All Books</h2>
+            <p class="section-subtitle" id="recommendations-subtitle">Explore our complete collection of literary treasures</p>
+            
+            <!-- Filter and Sort Controls -->
+            <div class="books-controls" style="margin-bottom: 2rem; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; align-items: center;">
+                <input type="text" id="book-search" placeholder="Search books..." 
+                       style="padding: 0.75rem 1rem; border: 2px solid var(--cream-dark); border-radius: 10px; font-size: 1rem; min-width: 300px;">
+                
+                <select id="book-sort" style="padding: 0.75rem 1rem; border: 2px solid var(--cream-dark); border-radius: 10px; font-size: 1rem; background: white; cursor: pointer;">
+                    <option value="rating">Sort by Rating</option>
+                    <option value="title">Sort by Title</option>
+                    <option value="author">Sort by Author</option>
+                    <option value="year">Sort by Year</option>
+                </select>
+                
+                <button id="load-more-btn" class="btn-primary" style="padding: 0.75rem 1.5rem;">
+                    <i class="fas fa-plus"></i> Load More
+                </button>
+            </div>
+            
             <div class="books-carousel" id="recommended-books">
-                <div class="loading-spinner"><i class="fas fa-magic spin"></i><p>Generating personalized recommendations...</p></div>
+                <div class="loading-spinner"><i class="fas fa-book-open spin"></i><p>Loading books...</p></div>
             </div>
         </div>
     </section>

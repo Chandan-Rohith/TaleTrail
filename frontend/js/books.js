@@ -94,14 +94,8 @@ function createBookCard(book, isRecommended = false, isMLRecommendation = false)
     const bookId = book.book_id || book.id;
     const isFavorited = userFavorites.has(bookId);
     
-    // Determine classes based on recommendation type
-    const cardClass = isMLRecommendation ? 'recommended-book ml-recommended' : (isRecommended ? 'recommended-book' : '');
-    const titleClass = isMLRecommendation ? 'ml-recommended-title' : (isRecommended ? 'recommended-title' : '');
-    const authorClass = isMLRecommendation ? 'ml-recommended-author' : (isRecommended ? 'recommended-author' : '');
-    const badgeText = isMLRecommendation ? '<i class="fas fa-brain"></i> ML Recommended' : '<i class="fas fa-star"></i> Recommended';
-    
     return `
-        <div class="book-card ${cardClass}" onclick="openBookModal(${bookId})" style="position: relative;">
+        <div class="book-card" onclick="openBookModal(${bookId})" style="position: relative;">
             <div class="book-cover-container">
                 <img src="${coverUrl}" alt="${book.title}" class="book-cover" 
                      onerror="handleImageError(this, '${book.title.charAt(0).toUpperCase()}');"
@@ -114,18 +108,17 @@ function createBookCard(book, isRecommended = false, isMLRecommendation = false)
                     </div>
                     <span>${rating}</span>
                 </div>
-                ${(isRecommended || isMLRecommendation) ? `<div class="recommended-badge ${isMLRecommendation ? 'ml-badge' : ''}">${badgeText}</div>` : ''}
             </div>
             <div class="book-info">
                 <div class="book-title-row">
-                    <h3 class="book-title ${titleClass}">${book.title || 'Unknown Title'}</h3>
+                    <h3 class="book-title">${book.title || 'Unknown Title'}</h3>
                     <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" 
                             onclick="event.stopPropagation(); toggleFavorite(${bookId}, this)"
                             title="${isFavorited ? 'Remove from favorites' : 'Add to favorites'}">
                         <i class="${isFavorited ? 'fas' : 'far'} fa-heart"></i>
                     </button>
                 </div>
-                <p class="book-author ${authorClass}">by ${book.author || 'Unknown Author'}</p>
+                <p class="book-author">by ${book.author || 'Unknown Author'}</p>
                 <p class="book-country">
                     <i class="fas fa-globe"></i>
                     ${book.country || book.country_name || 'Unknown'}
@@ -384,15 +377,42 @@ async function loadTrendingBooks() {
     }
 }
 
-// Load ML-Based Recommendations ONLY (No Popular Books Fallback)
-async function loadRecommendations() {
+// Load All Books with pagination and filtering
+let currentOffset = 0;
+let currentSearch = '';
+let currentSort = 'rating';
+let isLoadingBooks = false;
+let hasMoreBooks = true;
+
+async function loadAllBooks(reset = false) {
     const container = document.getElementById('recommended-books');
     const titleElement = document.getElementById('recommendations-title');
     const subtitleElement = document.getElementById('recommendations-subtitle');
+    const loadMoreBtn = document.getElementById('load-more-btn');
     
     if (!container) {
-        // Silently return if container not found (e.g., on profile page)
         return;
+    }
+    
+    // Prevent multiple simultaneous loads
+    if (isLoadingBooks) {
+        console.log('⏳ Already loading books, skipping...');
+        return;
+    }
+    
+    isLoadingBooks = true;
+    
+    // Reset pagination if requested
+    if (reset) {
+        currentOffset = 0;
+        hasMoreBooks = true;
+        container.innerHTML = '<div class="loading-spinner"><i class="fas fa-book-open spin"></i><p>Loading books...</p></div>';
+    } else {
+        // Show loading indicator for "load more"
+        if (loadMoreBtn) {
+            loadMoreBtn.disabled = true;
+            loadMoreBtn.innerHTML = '<i class="fas fa-spinner spin"></i> Loading...';
+        }
     }
     
     // Wait for favorites to load if user is authenticated
@@ -401,96 +421,138 @@ async function loadRecommendations() {
     }
     
     try {
-        // Only show ML recommendations if user is authenticated
-        if (!authManager.isAuthenticated() || !authManager.user || !authManager.user.id) {
-            // User not logged in - show message to login
-            container.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-                    <i class="fas fa-brain" style="font-size: 3rem; color: var(--forest); margin-bottom: 1rem;"></i>
-                    <h3>🧠 AI-Powered Recommendations</h3>
-                    <p style="margin-bottom: 1.5rem;">Login to get personalized book recommendations based on your favorites!</p>
-                    <button onclick="showAuthModal()" class="cta-button" style="font-size: 1rem; padding: 0.75rem 1.5rem;">
-                        <i class="fas fa-sign-in-alt"></i> Login to Get Recommendations
-                    </button>
-                </div>
-            `;
+        const response = await apiService.getBooks({
+            search: currentSearch,
+            sort: currentSort,
+            order: 'desc',
+            limit: 20,
+            offset: currentOffset
+        });
+        
+        console.log('📚 Books response:', response);
+        
+        if (response && response.books && response.books.length > 0) {
+            // Remove duplicates by book ID
+            const uniqueBooks = [];
+            const seenIds = new Set();
             
+            response.books.forEach(book => {
+                const bookId = book.id || book.book_id;
+                if (bookId && !seenIds.has(bookId)) {
+                    seenIds.add(bookId);
+                    uniqueBooks.push(book);
+                }
+            });
+            
+            console.log('✅ Loaded:', response.books.length, 'books | Unique:', uniqueBooks.length);
+            
+            // Create book cards
+            const booksHTML = uniqueBooks.map(book => createBookCard(book, false, false)).join('');
+            
+            if (reset) {
+                container.innerHTML = booksHTML;
+            } else {
+                // Append to existing books
+                container.innerHTML += booksHTML;
+            }
+            
+            // Update pagination state
+            currentOffset += uniqueBooks.length;
+            hasMoreBooks = response.pagination && response.pagination.hasMore;
+            
+            // Update load more button
+            if (loadMoreBtn) {
+                if (hasMoreBooks) {
+                    loadMoreBtn.disabled = false;
+                    loadMoreBtn.innerHTML = '<i class="fas fa-plus"></i> Load More';
+                    loadMoreBtn.style.display = 'inline-block';
+                } else {
+                    loadMoreBtn.style.display = 'none';
+                }
+            }
+            
+            // Update titles
             if (titleElement) {
-                titleElement.textContent = '✨ AI-Powered Recommendations';
+                titleElement.textContent = currentSearch ? `📚 Search Results for "${currentSearch}"` : '📚 All Books';
             }
             if (subtitleElement) {
-                subtitleElement.textContent = 'Login to unlock personalized book recommendations';
+                subtitleElement.textContent = `Showing ${currentOffset} of ${response.pagination?.total || currentOffset} books`;
             }
             
-            return;
-        }
-        
-        // User is logged in - fetch ML recommendations
-        showLoading('recommended-books', 'Loading AI recommendations...');
-        
-        const mlResponse = await apiService.getUserRecommendations(
-            authManager.user.id, 
-            CONFIG.RECOMMENDATIONS_LIMIT
-        );
-        
-        console.log('📊 Full ML Response:', mlResponse);
-        
-        // Check if we got recommendations
-        if (mlResponse.recommendations && mlResponse.recommendations.length > 0) {
-            // Update title for ML recommendations
-            if (titleElement) {
-                titleElement.textContent = '✨ AI Recommended For You';
-            }
-            if (subtitleElement) {
-                subtitleElement.textContent = 'Personalized recommendations powered by machine learning';
-            }
-            
-            // Display ML recommendations with special styling
-            container.innerHTML = mlResponse.recommendations.map(book => 
-                createBookCard(book, true, true)  // isRecommended=true, isMLRecommendation=true
-            ).join('');
-            
-            console.log('✅ Loaded ML recommendations:', mlResponse.recommendations.length, 'books');
         } else {
-            // No recommendations available - user needs to add favorites
-            container.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-                    <i class="fas fa-heart" style="font-size: 3rem; color: var(--burgundy); margin-bottom: 1rem;"></i>
-                    <h3>No Recommendations Yet</h3>
-                    <p style="margin-bottom: 1.5rem;">Add some books to your favorites to get personalized AI recommendations!</p>
-                    <button onclick="window.location.href='main.html'" class="cta-button" style="font-size: 1rem; padding: 0.75rem 1.5rem;">
-                        <i class="fas fa-book"></i> Browse Books
-                    </button>
-                </div>
-            `;
-            
-            if (titleElement) {
-                titleElement.textContent = '✨ AI Recommendations';
-            }
-            if (subtitleElement) {
-                subtitleElement.textContent = 'Add favorites to get personalized recommendations';
+            if (reset) {
+                container.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                        <i class="fas fa-book-dead" style="font-size: 3rem; color: var(--text-gray); margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <h3>No Books Found</h3>
+                        <p>${currentSearch ? `No results for "${currentSearch}"` : 'No books available'}</p>
+                    </div>
+                `;
             }
             
-            console.log('⚠️ No ML recommendations - user needs to add favorites');
+            hasMoreBooks = false;
+            if (loadMoreBtn) {
+                loadMoreBtn.style.display = 'none';
+            }
         }
         
     } catch (error) {
-        console.error('❌ Error loading ML recommendations:', error);
-        container.innerHTML = `
-            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-                <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #dc2626; margin-bottom: 1rem;"></i>
-                <h3>Failed to Load Recommendations</h3>
-                <p>Please try again later or contact support if the issue persists.</p>
-            </div>
-        `;
-        
-        if (titleElement) {
-            titleElement.textContent = '✨ AI Recommendations';
+        console.error('❌ Error loading books:', error);
+        if (reset) {
+            container.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #dc2626; margin-bottom: 1rem;"></i>
+                    <h3>Failed to Load Books</h3>
+                    <p>Please try again later.</p>
+                </div>
+            `;
         }
-        if (subtitleElement) {
-            subtitleElement.textContent = 'Something went wrong';
+    } finally {
+        isLoadingBooks = false;
+        if (loadMoreBtn && !reset) {
+            loadMoreBtn.disabled = false;
+            loadMoreBtn.innerHTML = '<i class="fas fa-plus"></i> Load More';
         }
     }
+}
+
+// Setup search and filter controls
+function setupBooksControls() {
+    const searchInput = document.getElementById('book-search');
+    const sortSelect = document.getElementById('book-sort');
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    
+    if (searchInput) {
+        // Debounce search input
+        let searchTimeout;
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentSearch = e.target.value.trim();
+                loadAllBooks(true); // Reset and reload
+            }, 500);
+        });
+    }
+    
+    if (sortSelect) {
+        sortSelect.addEventListener('change', (e) => {
+            currentSort = e.target.value;
+            loadAllBooks(true); // Reset and reload
+        });
+    }
+    
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', () => {
+            if (hasMoreBooks && !isLoadingBooks) {
+                loadAllBooks(false); // Load more without reset
+            }
+        });
+    }
+}
+
+// Legacy function name for compatibility - just calls loadAllBooks
+async function loadRecommendations() {
+    await loadAllBooks(true);
 }
 
 // Event Listeners
@@ -505,15 +567,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     // Load trending books on page load (only if container exists)
-    // AWAIT this to ensure favorites are set before rendering
     if (document.getElementById('trending-books')) {
         await loadTrendingBooks();
     }
     
-    // Load recommendations if on main page
-    // AWAIT this to ensure proper sequencing
+    // Load all books if on main page (replaces recommendations)
     if (document.getElementById('recommended-books')) {
-        await loadRecommendations();
+        setupBooksControls(); // Setup search and filter controls
+        await loadAllBooks(true); // Load initial books
     }
     
     // Close modal when clicking backdrop

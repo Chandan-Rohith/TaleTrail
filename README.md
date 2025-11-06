@@ -10,8 +10,11 @@ A colorful, interactive book discovery platform that takes you on a literary jou
 ## ✨ Features
 - 🗺️ Interactive world map showing top books by country
 - 📖 Beautiful book cards with hover effects and tooltips
-- 🤖 AI-powered book recommendations
+- 📚 Browse complete collection with search and filtering
+- 🔥 Trending books and popular titles
+- ⭐ User ratings and reviews
 - 👤 User authentication and personalized experience
+- ❤️ Favorite books collection
 - 📱 Fully responsive design
 
 ## 🚀 Quick Start
@@ -32,19 +35,13 @@ cd taletrail
 ```bash
 cd backend
 npm install
-npm run dev
+cp .env.example .env  # Create .env file and configure your database
+npm start
 ```
 
-3. **Set up ML Service**
+3. **Set up Frontend**
 ```bash
-cd ml-service
-pip install -r requirements.txt
-python app.py
-```
-
-4. **Set up Frontend**
-```bash
-cd frontend-html
+cd frontend
 # Open index.html in your browser or use a local server
 # For local server (recommended):
 python -m http.server 3000
@@ -52,7 +49,7 @@ python -m http.server 3000
 npx serve -s . -l 3000
 ```
 
-5. **Set up Database**
+4. **Set up Database**
 ```bash
 cd database
 # Import the schema and sample data
@@ -63,11 +60,10 @@ mysql -u root -p < sample_data.sql
 ## 📁 Project Structure
 ```
 taletrail/
-├── frontend-html/     # HTML/CSS/JS frontend with colorful UI
-├── backend/           # Express.js API server
-├── ml-service/        # Python AI/ML recommendation engine
+├── frontend/          # HTML/CSS/JS frontend with colorful UI
+├── backend/           # Express.js API server with SQL-based recommendations
 ├── database/          # MySQL schema and sample data
-└── README.md         # This file
+└── README.md          # This file
 ```
 
 ## 🎨 Color Palette

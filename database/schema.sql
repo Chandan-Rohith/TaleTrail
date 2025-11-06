@@ -8,10 +8,7 @@ CREATE DATABASE IF NOT EXISTS taletrail_db CHARACTER SET utf8mb4 COLLATE utf8mb4
 USE taletrail_db;
 
 -- Drop existing tables in correct order (respecting foreign keys)
-DROP VIEW IF EXISTS trending_books;
-DROP VIEW IF EXISTS book_stats;
 DROP TABLE IF EXISTS book_genre_relations;
-DROP TABLE IF EXISTS user_interactions;
 DROP TABLE IF EXISTS ratings;
 DROP TABLE IF EXISTS user_favorites;
 DROP TABLE IF EXISTS book_genres;
@@ -81,21 +78,6 @@ CREATE TABLE ratings (
     INDEX idx_created (created_at)
 );
 
--- User interactions for ML recommendations
-CREATE TABLE user_interactions (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL,
-    book_id INT NOT NULL,
-    interaction_type ENUM('view', 'rating', 'favorite', 'share') NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
-    INDEX idx_user_interactions (user_id, created_at),
-    INDEX idx_book_interactions (book_id, created_at),
-    INDEX idx_interaction_type (interaction_type),
-    UNIQUE KEY unique_user_book_interaction (user_id, book_id, interaction_type)
-);
-
 -- Book genres/categories for better recommendations
 CREATE TABLE book_genres (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -128,38 +110,7 @@ CREATE TABLE user_favorites (
 -- Create indexes for better performance
 CREATE INDEX idx_books_country_rating ON books(country_id, average_rating DESC);
 CREATE INDEX idx_ratings_recent ON ratings(created_at DESC);
-CREATE INDEX idx_interactions_recent ON user_interactions(created_at DESC);
 
--- Create views for common queries
-CREATE VIEW book_stats AS
-SELECT 
-    b.id,
-    b.title,
-    b.author,
-    b.average_rating,
-    b.rating_count,
-    c.name as country_name,
-    c.code as country_code,
-    COUNT(DISTINCT ui.user_id) as unique_viewers,
-    COUNT(DISTINCT uf.user_id) as favorites_count
-FROM books b
-LEFT JOIN countries c ON b.country_id = c.id
-LEFT JOIN user_interactions ui ON b.id = ui.book_id AND ui.interaction_type = 'view'
-LEFT JOIN user_favorites uf ON b.id = uf.book_id
-GROUP BY b.id, b.title, b.author, b.average_rating, b.rating_count, c.name, c.code;
-
--- View for trending books (books with recent activity)
-CREATE VIEW trending_books AS
-SELECT 
-    b.*,
-    c.name as country_name,
-    c.code as country_code,
-    COUNT(ui.id) as recent_interactions,
-    AVG(r.rating) as recent_avg_rating
-FROM books b
-LEFT JOIN countries c ON b.country_id = c.id
-LEFT JOIN user_interactions ui ON b.id = ui.book_id AND ui.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-LEFT JOIN ratings r ON b.id = r.book_id AND r.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-GROUP BY b.id
-HAVING recent_interactions > 0
-ORDER BY recent_interactions DESC, recent_avg_rating DESC;
+-- Note: Views removed as they are not used in the application
+-- Trending books are calculated directly in backend/routes/books.js
+-- This provides better performance and simpler maintenance

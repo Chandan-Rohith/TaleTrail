@@ -59,6 +59,15 @@ router.get('/', optionalAuth, async (req, res) => {
         break;
     }
 
+    // Add deduplication to prevent duplicate books from showing
+    // Uses same strategy as trending endpoint - select canonical row per (title, author)
+    // The deduplication happens in the main WHERE clause
+    if (conditions.length > 0) {
+      whereClause = 'WHERE ' + conditions.join(' AND ') + ' AND b.id IN (SELECT MIN(id) FROM books GROUP BY title, author)';
+    } else {
+      whereClause = 'WHERE b.id IN (SELECT MIN(id) FROM books GROUP BY title, author)';
+    }
+
     const query = `
       SELECT 
         b.id,
@@ -79,35 +88,30 @@ router.get('/', optionalAuth, async (req, res) => {
       LIMIT ? OFFSET ?
     `;
 
-    const limitNum = parseInt(limit) || 20;
-    const offsetNum = parseInt(offset) || 0;
+    const limitNum = Math.max(1, Math.min(parseInt(limit) || 20, 100)); // Clamp between 1-100
+    const offsetNum = Math.max(0, parseInt(offset) || 0); // Minimum 0
 
-    // Build complete query with parameters inline to avoid prepared statement issues
-    const completeQuery = query.replace('LIMIT ? OFFSET ?', `LIMIT ${limitNum} OFFSET ${offsetNum}`);
-    let paramIndex = 0;
-    const finalQuery = completeQuery.replace(/\?/g, () => {
-      const param = params[paramIndex++];
-      return typeof param === 'string' ? `'${param.replace(/'/g, "''")}'` : param;
-    });
+    // Note: MySQL doesn't support prepared statement placeholders for LIMIT/OFFSET
+    // We use validated integers directly in the query (safe after parseInt + clamping)
+    const queryWithLimits = query.replace('LIMIT ? OFFSET ?', `LIMIT ${limitNum} OFFSET ${offsetNum}`);
 
-    const [books] = await db.query(finalQuery);
+    const [books] = await db.execute(queryWithLimits, params);
 
-    // Get total count for pagination
+    // Get total count for pagination (deduplicated count)
     let countQuery = `
       SELECT COUNT(*) as total
-      FROM books b
-      LEFT JOIN countries c ON b.country_id = c.id
-      ${whereClause}
+      FROM (
+        SELECT b.id
+        FROM books b
+        LEFT JOIN countries c ON b.country_id = c.id
+        ${whereClause}
+      ) as deduplicated_books
     `;
     
-    // Replace parameters in count query
-    paramIndex = 0;
-    const finalCountQuery = countQuery.replace(/\?/g, () => {
-      const param = params[paramIndex++];
-      return typeof param === 'string' ? `'${param.replace(/'/g, "''")}'` : param;
-    });
+    // Create a separate params array for count query (exclude limit/offset)
+    const countParams = params.slice(0, params.length - 2);
     
-    const [countResult] = await db.query(finalCountQuery);
+    const [countResult] = await db.execute(countQuery, countParams);
     const total = countResult[0].total;
 
     res.json({
@@ -129,13 +133,14 @@ router.get('/', optionalAuth, async (req, res) => {
 router.get('/trending', async (req, res) => {
   try {
     const { limit = 12 } = req.query;
-    const limitNum = parseInt(limit) || 12;
+    const limitNum = Math.max(1, Math.min(parseInt(limit) || 12, 100)); // Clamp between 1-100
     
     console.log('Fetching trending books with limit:', limitNum);
     
     // Deduplication via subquery - returns canonical row per (title, author)
     // See DUPLICATE_BOOKS_FIX_SUMMARY.md for background on database cleanup
-    const [books] = await db.query(`
+    // Note: Using db.query() since MySQL doesn't support prepared statement placeholders for LIMIT
+    const query = `
       SELECT 
         b.id,
         b.title,
@@ -158,7 +163,9 @@ router.get('/trending', async (req, res) => {
         (b.average_rating * b.rating_count) DESC,
         b.rating_count DESC
       LIMIT ${limitNum}
-    `);
+    `;
+    
+    const [books] = await db.query(query);
 
     console.log('Found trending books (deduplicated):', books.length);
     res.json(books);
@@ -206,15 +213,6 @@ router.get('/:id', optionalAuth, async (req, res) => {
       LIMIT 10
     `, [id]);
 
-    // Log user interaction if authenticated
-    if (req.user) {
-      await db.execute(`
-        INSERT INTO user_interactions (user_id, book_id, interaction_type, created_at)
-        VALUES (?, ?, 'view', NOW())
-        ON DUPLICATE KEY UPDATE created_at = NOW()
-      `, [req.user.userId, id]);
-    }
-
     res.json({
       book,
       reviews,
@@ -232,25 +230,30 @@ router.get('/country/:countryCode', optionalAuth, async (req, res) => {
     const { countryCode } = req.params;
     const limit = req.query.limit || 10;
 
-    const limitNum = parseInt(limit) || 10;
-    const countryCodeUpper = countryCode.toUpperCase();
+    const limitNum = Math.max(1, Math.min(parseInt(limit) || 10, 100)); // Validate: 1-100 range
+    const countryCodeUpper = countryCode.toUpperCase().substring(0, 3); // Limit to 3 chars for country code
     
-    const [books] = await db.query(`
+    // Add deduplication to prevent duplicate books from showing
+    // Note: MySQL prepared statements don't support placeholders for LIMIT
+    const booksQuery = `
       SELECT 
         b.*,
         c.name as country_name,
         c.code as country_code
       FROM books b
       JOIN countries c ON b.country_id = c.id
-      WHERE c.code = '${countryCodeUpper}'
+      WHERE c.code = ?
+        AND b.id IN (SELECT MIN(id) FROM books GROUP BY title, author)
       ORDER BY b.average_rating DESC, b.rating_count DESC
       LIMIT ${limitNum}
-    `);
+    `;
+    
+    const [books] = await db.execute(booksQuery, [countryCodeUpper]);
 
     // Get country info
-    const [countries] = await db.query(`
-      SELECT name, code FROM countries WHERE code = '${countryCodeUpper}'
-    `);
+    const [countries] = await db.execute(`
+      SELECT name, code FROM countries WHERE code = ?
+    `, [countryCodeUpper]);
 
     const country = countries.length > 0 ? countries[0] : null;
 
