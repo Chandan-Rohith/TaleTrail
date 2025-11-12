@@ -181,6 +181,9 @@ class AuthManager {
 // Initialize auth manager
 const authManager = new AuthManager();
 
+// Expose authManager globally so other modules can access it
+window.authManager = authManager;
+
 // Expose a global promise that indicates when initial auth verification has completed.
 // Other parts of the app can await `window.authReady` to avoid UI flashes.
 window.authReady = authManager.ready;
