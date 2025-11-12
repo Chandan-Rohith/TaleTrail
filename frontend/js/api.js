@@ -7,11 +7,17 @@ class APIService {
 
     async makeRequest(url, options = {}) {
         try {
+            // Get auth headers safely, with fallback if authManager isn't available
+            const authHeaders = (window.authManager && typeof window.authManager.getAuthHeaders === 'function')
+                ? window.authManager.getAuthHeaders()
+                : { 'Content-Type': 'application/json' };
+
             const response = await fetch(url, {
                 ...options,
                 headers: {
-                    ...options.headers,
-                    ...authManager.getAuthHeaders()
+                    'Content-Type': 'application/json',
+                    ...authHeaders,
+                    ...options.headers
                 }
             });
 

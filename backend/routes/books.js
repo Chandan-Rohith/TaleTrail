@@ -108,10 +108,8 @@ router.get('/', optionalAuth, async (req, res) => {
       ) as deduplicated_books
     `;
     
-    // Create a separate params array for count query (exclude limit/offset)
-    const countParams = params.slice(0, params.length - 2);
-    
-    const [countResult] = await db.execute(countQuery, countParams);
+    // Use same params array for count query (limit/offset not in params, they're in query string)
+    const [countResult] = await db.execute(countQuery, params);
     const total = countResult[0].total;
 
     res.json({
