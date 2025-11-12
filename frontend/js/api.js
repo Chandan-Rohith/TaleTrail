@@ -12,13 +12,14 @@ class APIService {
                 ? window.authManager.getAuthHeaders()
                 : { 'Content-Type': 'application/json' };
 
-            console.log('🔑 Auth headers:', authHeaders);
-            console.log('🌐 Making request to:', url);
-
-            // Debug: log the auth headers used for requests
-            try {
-                console.debug('[api] makeRequest', { url, authHeaders, optionsHeaders: options.headers });
-            } catch (e) {}
+            // Optional debug logging (sanitized - never log tokens)
+            if (typeof DEBUG !== 'undefined' && DEBUG) {
+                console.debug('[api] makeRequest', { 
+                    url, 
+                    hasAuthHeader: !!authHeaders.Authorization,
+                    method: options.method || 'GET'
+                });
+            }
 
             const response = await fetch(url, {
                 ...options,
